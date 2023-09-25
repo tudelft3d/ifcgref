@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for  # Import the redirect function
 from werkzeug.utils import secure_filename
 import os
 
@@ -24,9 +24,23 @@ def upload_file():
     if file and allowed_file(file.filename):  # Check if the file extension is allowed
         filename = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return "File uploaded successfully"
+        return redirect(url_for('convert_crs', filename=filename))  # Redirect to EPSG code input page
     else:
         return "Invalid file format. Please upload a .ifc file."
+    
+@app.route('/convert/<filename>', methods=['GET', 'POST'])
+def convert_crs(filename):
+    if request.method == 'POST':
+        try:
+            epsg_code = int(request.form['epsg_code'])
+        except ValueError:
+            return "Invalid EPSG code. Please enter a valid integer."
+        
+        # Perform CRS conversion or other processing with the EPSG code here
+        
+        return "CRS conversion completed successfully (EPSG code: {})".format(epsg_code)
+
+    return render_template('convert.html', filename=filename)
 
 if __name__ == '__main__':
     app.run(debug=True)
