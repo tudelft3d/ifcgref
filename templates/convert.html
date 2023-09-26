@@ -1,13 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Convert CRS</title>
+    <title>CRS Conversion</title>
 </head>
 <body>
-    <h1>Convert Coordinate Reference System (CRS)</h1>
+    <h1>CRS Conversion</h1>
+    
+    <!-- Display the messages from the 'infoExt' function -->
+    {% if message %}
+    <pre>{{ message | safe }}</pre>
+    {% endif %}
+    
     <form method="POST">
-        <label for="epsg_code">Enter the target EPSG code for the CRS (e.g., 3395): </label>
-        <input type="number" id="epsg_code" name="epsg_code" required>
+        <label for="epsg_code">Enter the target EPSG code for the CRS (e.g., 3395):</label>
+        <input type="text" id="epsg_code" name="epsg_code">
         <input type="submit" value="Convert">
     </form>
 </body>

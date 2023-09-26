@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Upload IFC File</title>
+    <title>File Upload</title>
 </head>
 <body>
-    <h1>Upload IFC File</h1>
+    <h1>Upload an .ifc file</h1>
+    
+    <!-- Display error message if present -->
+    {% if error_message %}
+    <p style="color: red;">{{ error_message }}</p>
+    {% endif %}
+    
     <form method="POST" action="/upload" enctype="multipart/form-data">
         <input type="file" name="file">
         <input type="submit" value="Upload">
