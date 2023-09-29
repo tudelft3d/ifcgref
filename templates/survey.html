@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CRS Conversion</title>
+    <title>Update goereferenced Points</title>
 </head>
 <body>
-    <h1>CRS Conversion</h1>
+    <h1>Create Table</h1>
     
-    <!-- Display the messages from the 'infoExt' function -->
     {% if message %}
     <pre>{{ message | safe }}</pre>
 
@@ -19,9 +18,9 @@
     {% endif %}
     
     <form method="POST">
-        <label for="epsg_code">Enter the target EPSG code for the CRS (e.g., 3395):</label>
-        <input type="text" id="epsg_code" name="epsg_code">
-        <input type="submit" value="Convert">
+        <label for="Num">Enter the number of extra points:</label>
+        <input type="text" id="Num" name="Num">
+        <input type="submit" value="Set">
     </form>
 </body>
 </html>

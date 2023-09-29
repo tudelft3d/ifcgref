@@ -149,8 +149,6 @@ def infoExt(filename , epsgCode):
         return message
 
 
-    x2= x1*coeff
-    y2= y1*coeff
 
 
     message += f"Longitude: {round(y0,4)}\n"
@@ -165,6 +163,7 @@ def infoExt(filename , epsgCode):
     else:
         message += "No length unit found in the IFC file."
     message += f"coeff: {coeff}\n"
+    message += "______"
 
     return message
     
@@ -196,13 +195,26 @@ def convert_crs(filename):
         try:
             epsg_code = int(request.form['epsg_code'])
         except ValueError:
-            return "Invalid EPSG code. Please enter a valid integer."
+            message = "Invalid EPSG code. Please enter a valid integer."
+            return render_template('convert.html', filename=filename, message=message)
         
         # Perform CRS conversion or other processing with the EPSG code here
         message = infoExt(filename,epsg_code)
+        if message.endswith("______"):
+            return redirect(url_for('survey_points', filename=filename))
         return render_template('convert.html', filename=filename, message=message)
 
     return render_template('convert.html', filename=filename)
+
+@app.route('/survey/<filename>', methods=['GET', 'POST'])
+def survey_points(filename):
+    if request.method == 'POST':
+        try:
+            Num = int(request.form['Num'])
+        except ValueError:
+            message = "Please enter a valid integer."
+            return render_template('survey.html', filename=filename, message=message)
+    return render_template('survey.html', filename=filename)
 
 if __name__ == '__main__':
     app.run(debug=True)
