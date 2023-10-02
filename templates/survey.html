@@ -1,26 +1,45 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Update goereferenced Points</title>
+    <title>goereferenced points</title>
 </head>
 <body>
-    <h1>Create Table</h1>
+    <h1>Add goereferenced points</h1>
     
     {% if message %}
     <pre>{{ message | safe }}</pre>
-
-    <!-- {% if message.endswith("______") %}
-    <form method="POST" action="/survey">
-        <input type="submit" value="Next">
-        <a href="/"><input type="button" value="Back"></a>
-    </form>
-    {% endif %} -->
     {% endif %}
     
     <form method="POST">
-        <label for="Num">Enter the number of extra points:</label>
+        <label for="Num">Enter the number of extra surveyed points:</label>
         <input type="text" id="Num" name="Num">
         <input type="submit" value="Set">
     </form>
+
+    <div id="tableContainer">
+        <!-- Use Jinja2 to generate the table based on the table_content data -->
+        {% if table_content %}
+        <table border="1">
+            <tr>
+                <th>x</th>
+                <th>y</th>
+                <th>z</th>
+                <th>x'</th>
+                <th>y'</th>
+                <th>z'</th>
+            </tr>
+            {% for row in table_content %}
+            <tr>
+                <td>{{ row['x'] }}</td>
+                <td>{{ row['y'] }}</td>
+                <td>{{ row['z'] }}</td>
+                <td>{{ row['x_prime'] }}</td>
+                <td>{{ row['y_prime'] }}</td>
+                <td>{{ row['z_prime'] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+    </div>
 </body>
 </html>

@@ -201,20 +201,37 @@ def convert_crs(filename):
         # Perform CRS conversion or other processing with the EPSG code here
         message = infoExt(filename,epsg_code)
         if message.endswith("______"):
-            return redirect(url_for('survey_points', filename=filename))
+            return redirect(url_for('survey_points', filename=filename, message=message))
         return render_template('convert.html', filename=filename, message=message)
 
     return render_template('convert.html', filename=filename)
 
 @app.route('/survey/<filename>', methods=['GET', 'POST'])
 def survey_points(filename):
+    message = ""
+    table_content = []
+
     if request.method == 'POST':
         try:
             Num = int(request.form['Num'])
+            if Num < 0:
+                message = "Please enter zero or a positive integer."
+                return render_template('survey.html', filename=filename, message=message)
         except ValueError:
             message = "Please enter a valid integer."
             return render_template('survey.html', filename=filename, message=message)
-    return render_template('survey.html', filename=filename)
+        
+        for i in range(1, Num + 1):
+            row_data = {
+            'x': i * 10,      # Example value for x
+            'y': i * 20,      # Example value for y
+            'z': i * 30,      # Example value for z
+            'x_prime': i * 15, # Example value for x'
+            'y_prime': i * 25, # Example value for y'
+            'z_prime': i * 35  # Example value for z'
+            }
+            table_content.append(row_data)
+    return render_template('survey.html', filename=filename, message=message, table_content=table_content)
 
 if __name__ == '__main__':
     app.run(debug=True)
