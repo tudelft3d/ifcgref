@@ -18,7 +18,7 @@
 
     <div id="tableContainer">
         <!-- Use Jinja2 to generate the table based on the table_content data -->
-        {% if table_content %}
+        {% if Num %}
         <table border="1">
             <tr>
                 <th>x</th>
@@ -28,14 +28,14 @@
                 <th>y'</th>
                 <th>z'</th>
             </tr>
-            {% for row in table_content %}
+            {% for row in range(Num) %}
             <tr>
-                <td>{{ row['x'] }}</td>
-                <td>{{ row['y'] }}</td>
-                <td>{{ row['z'] }}</td>
-                <td>{{ row['x_prime'] }}</td>
-                <td>{{ row['y_prime'] }}</td>
-                <td>{{ row['z_prime'] }}</td>
+                <td><input type="text" name="x{{ row }}"></td>
+                <td><input type="text" name="y{{ row }}"></td>
+                <td><input type="text" name="z{{ row }}"></td>
+                <td><input type="text" name="x_prime{{ row }}"></td>
+                <td><input type="text" name="y_prime{{ row }}"></td>
+                <td><input type="text" name="z_prime{{ row }}"></td>
             </tr>
             {% endfor %}
         </table>

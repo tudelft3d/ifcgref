@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for  # Import the redirect function
+from flask import Flask, render_template, request, redirect, url_for, session # Import the redirect function
 from werkzeug.utils import secure_filename
 import os
 import ifcopenshell
@@ -10,9 +10,13 @@ import pyproj
 from pyproj import Transformer
 import pint
 from pint.errors import UndefinedUnitError
+import numpy as np
+import math
+from scipy.optimize import leastsq
 
 
 app = Flask(__name__)
+app.secret_key = '88746898'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 ALLOWED_EXTENSIONS = {'ifc'}  # Define allowed file extensions as a set
 
@@ -165,7 +169,16 @@ def infoExt(filename , epsgCode):
     message += f"coeff: {coeff}\n"
     message += "______"
 
+    x2= x1*coeff
+    y2= y1*coeff
+
+    session['x2'] = x2
+    session['y2'] = y2
+    session['z1'] = z1
+
+
     return message
+
     
 
 @app.route('/')
@@ -198,18 +211,20 @@ def convert_crs(filename):
             message = "Invalid EPSG code. Please enter a valid integer."
             return render_template('convert.html', filename=filename, message=message)
         
-        # Perform CRS conversion or other processing with the EPSG code here
-        message = infoExt(filename,epsg_code)
+       # Call the infoExt function and unpack the results
+        message = infoExt(filename, epsg_code)
+
         if message.endswith("______"):
-            return redirect(url_for('survey_points', filename=filename, message=message))
+            # Pass x2, y2, and z1 to the survey_points route
+            return redirect(url_for('survey_points', filename=filename))
         return render_template('convert.html', filename=filename, message=message)
 
     return render_template('convert.html', filename=filename)
 
 @app.route('/survey/<filename>', methods=['GET', 'POST'])
 def survey_points(filename):
-    message = ""
-    table_content = []
+    message = local_trans(filename)
+    Num = []
 
     if request.method == 'POST':
         try:
@@ -220,18 +235,47 @@ def survey_points(filename):
         except ValueError:
             message = "Please enter a valid integer."
             return render_template('survey.html', filename=filename, message=message)
-        
-        for i in range(1, Num + 1):
-            row_data = {
-            'x': i * 10,      # Example value for x
-            'y': i * 20,      # Example value for y
-            'z': i * 30,      # Example value for z
-            'x_prime': i * 15, # Example value for x'
-            'y_prime': i * 25, # Example value for y'
-            'z_prime': i * 35  # Example value for z'
-            }
-            table_content.append(row_data)
-    return render_template('survey.html', filename=filename, message=message, table_content=table_content)
+
+    return render_template('survey.html', filename=filename, message=message, Num=Num)
+
+def local_trans(filename):
+    fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    ifc_file = ifcopenshell.open(fn)
+    x2 = session.get('x2')
+    y2 = session.get('y2')
+    z1 = session.get('z1')
+
+    message = ""
+    if hasattr(ifc_file.by_type("IfcSite")[0], "ObjectPlacement") and ifc_file.by_type("IfcSite")[0].ObjectPlacement.is_a("IfcLocalPlacement"):
+        local_placement = ifc_file.by_type("IfcSite")[0].ObjectPlacement.RelativePlacement
+        # Check if the local placement is an IfcAxis2Placement3D
+        if local_placement.is_a("IfcAxis2Placement3D"):
+            local_origin = local_placement.Location.Coordinates
+            bx, by, bz = map(float, local_origin)
+            message += "First point Local coordinates:" + str(local_origin)
+        else:
+                message += "Local placement is not IfcAxis2Placement3D."
+    else:
+            message += "IfcSite does not have a local placement."
+            
+    message += "\nFirst point Target coordinates:" + str(x2) + ", " + str(y2) + ", " + str(z1)
+    return message
+
+def survey_points(filename):
+    message = local_trans(filename)
+    Num = []
+
+    if request.method == 'POST':
+        try:
+            Num = int(request.form['Num'])
+            if Num < 0:
+                message = "Please enter zero or a positive integer."
+                return render_template('survey.html', filename=filename, message=message)
+        except ValueError:
+            message = "Please enter a valid integer."
+            return render_template('survey.html', filename=filename, message=message)
+
+    return render_template('survey.html', filename=filename, message=message, Num=Num)
 
 if __name__ == '__main__':
     app.run(debug=True)
