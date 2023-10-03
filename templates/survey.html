@@ -11,7 +11,7 @@
     {% endif %}
 
     {% if Num %}
-        <form method="POST" action="/calc">
+        <form method="POST" action={{ url_for('calculate', filename=filename) }}>
             <div id="tableContainer">
                 <!-- Use Jinja2 to generate the table based on the table_content data -->
                 <table border="1">

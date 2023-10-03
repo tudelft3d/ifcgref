@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session # Import the redirect function
+from flask import Flask, render_template, request, redirect, url_for, session, render_template_string # Import the redirect function
 from werkzeug.utils import secure_filename
 import os
 import ifcopenshell
@@ -13,6 +13,7 @@ from pint.errors import UndefinedUnitError
 import numpy as np
 import math
 from scipy.optimize import leastsq
+import pandas as pd
 
 
 app = Flask(__name__)
@@ -26,9 +27,7 @@ def allowed_file(filename):
 
 def infoExt(filename , epsgCode):
     ureg = pint.UnitRegistry()
-    fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    ifc_file = ifcopenshell.open(fn)
-
+    ifc_file = fileOpener(filename)
     #check ifc version
     version = ifc_file.schema
     message = f"IFC version: {version}\n"
@@ -210,7 +209,7 @@ def convert_crs(filename):
         except ValueError:
             message = "Invalid EPSG code. Please enter a valid integer."
             return render_template('convert.html', filename=filename, message=message)
-        
+        session['target_epsg'] = epsg_code
        # Call the infoExt function and unpack the results
         message = infoExt(filename, epsg_code)
 
@@ -239,8 +238,7 @@ def survey_points(filename):
     return render_template('survey.html', filename=filename, message=message, Num=Num)
 
 def local_trans(filename):
-    fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    ifc_file = ifcopenshell.open(fn)
+    ifc_file = fileOpener(filename)
     x2 = session.get('x2')
     y2 = session.get('y2')
     z1 = session.get('z1')
@@ -259,11 +257,14 @@ def local_trans(filename):
             message += "IfcSite does not have a local placement."
     session['bx'] = bx
     session['by'] = by        
+    session['bz'] = bz        
+
     message += "\nFirst point Target coordinates:" + "(" + str(x2) + ", " + str(y2) + ", " + str(z1) + ")"
+    ifc_file = ifc_file.end_transaction()
     return message
 
-@app.route('/calc', methods=['POST'])
-def calculate():
+@app.route('/calc/<filename>', methods=['GET', 'POST'])
+def calculate(filename):
     if request.method == 'POST':
         # Access the form data by iterating through the rows
         rows = session.get('rows')
@@ -323,10 +324,38 @@ def calculate():
             S_solution, Rotation_solution, E_solution, N_solution = result
         Rotation_degrees = (180 / math.pi) * Rotation_solution
         rDeg = Rotation_degrees - (360*round(Rotation_degrees/360))
-        print("S:", S_solution)
-        print("Rotation (degrees):", rDeg)
-        print("E:", E_solution)
-        print("N:", N_solution)
+
+        fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        ifc_file = fileOpener(filename)
+        target_epsg = "EPSG:"+str(session.get('target_epsg'))
+        georeference_ifc.set_mapconversion_crs(ifc_file=ifc_file,
+                                        target_crs_epsg_code=target_epsg,
+                                        eastings=E_solution,
+                                        northings=N_solution,
+                                        orthogonal_height=(session.get('z1')-session.get('bz')),
+                                        x_axis_abscissa=math.cos(Rotation_solution),
+                                        x_axis_ordinate=math.sin(Rotation_solution),
+                                        scale=S_solution)
+        fn_output = re.sub('\.ifc$','_georeferenced.ifc', fn)
+        ifc_file.write(fn_output)
+        IfcMapConversion, IfcProjectedCRS = georeference_ifc.get_mapconversion_crs(ifc_file=ifc_file)
+        df = pd.DataFrame(list(IfcProjectedCRS.__dict__.items()), columns= ['property', 'value'])
+        dg = pd.DataFrame(list(IfcMapConversion.__dict__.items()), columns= ['property', 'value'])
+        html_table_f = df.to_html()
+        html_table_g = dg.to_html()
+        return render_template('result.html', table_f=html_table_f, table_g=html_table_g)
+    
+def fileOpener(filename):
+    fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    print("Opening IFC file:", fn)  # Add this line for debugging
+    try:
+        ifc_file = ifcopenshell.open(fn)
+        return ifc_file
+    except Exception as e:
+        print("Error opening IFC file:", str(e))  # Add this line for debugging
+        return None
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
