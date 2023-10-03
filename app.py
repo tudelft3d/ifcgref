@@ -235,7 +235,7 @@ def survey_points(filename):
         except ValueError:
             message = "Please enter a valid integer."
             return render_template('survey.html', filename=filename, message=message)
-
+        session['rows'] = Num
     return render_template('survey.html', filename=filename, message=message, Num=Num)
 
 def local_trans(filename):
@@ -244,7 +244,7 @@ def local_trans(filename):
     x2 = session.get('x2')
     y2 = session.get('y2')
     z1 = session.get('z1')
-
+    bx,by,bz = 0,0,0
     message = ""
     if hasattr(ifc_file.by_type("IfcSite")[0], "ObjectPlacement") and ifc_file.by_type("IfcSite")[0].ObjectPlacement.is_a("IfcLocalPlacement"):
         local_placement = ifc_file.by_type("IfcSite")[0].ObjectPlacement.RelativePlacement
@@ -257,25 +257,76 @@ def local_trans(filename):
                 message += "Local placement is not IfcAxis2Placement3D."
     else:
             message += "IfcSite does not have a local placement."
-            
-    message += "\nFirst point Target coordinates:" + str(x2) + ", " + str(y2) + ", " + str(z1)
+    session['bx'] = bx
+    session['by'] = by        
+    message += "\nFirst point Target coordinates:" + "(" + str(x2) + ", " + str(y2) + ", " + str(z1) + ")"
     return message
 
-def survey_points(filename):
-    message = local_trans(filename)
-    Num = []
-
+@app.route('/calc', methods=['POST'])
+def calculate():
     if request.method == 'POST':
-        try:
-            Num = int(request.form['Num'])
-            if Num < 0:
-                message = "Please enter zero or a positive integer."
-                return render_template('survey.html', filename=filename, message=message)
-        except ValueError:
-            message = "Please enter a valid integer."
-            return render_template('survey.html', filename=filename, message=message)
+        # Access the form data by iterating through the rows
+        rows = session.get('rows')
+        x2 = session.get('x2')
+        y2 = session.get('y2')
+        bx = session.get('bx')
+        by = session.get('by')
 
-    return render_template('survey.html', filename=filename, message=message, Num=Num)
+        data_points = []
+        data_points.append({"X": bx, "Y": by, "X_prime": x2, "Y_prime": y2})
+        if rows == 0:
+            S_solution, Rotation_solution, E_solution, N_solution = 1, 0, x2, y2
+        else:
+            
+            for row in range(rows):
+                x = request.form[f'x{row}']
+                y = request.form[f'y{row}']
+                z = request.form[f'z{row}']
+                x_prime = request.form[f'x_prime{row}']
+                y_prime = request.form[f'y_prime{row}']
+                z_prime = request.form[f'z_prime{row}']
+
+                try:
+                    x = float(x)
+                    y = float(y)
+                    z = float(z)
+                    x_prime = float(x_prime)
+                    y_prime = float(y_prime)
+                    z_prime = float(z_prime)
+                except ValueError:
+                    message = "Invalid input. Please enter only float values."
+                    Num = rows
+                    return render_template('survey.html', message=message, Num=Num)
+
+                data_points.append({"X": x, "Y": y, "X_prime": x_prime, "Y_prime": y_prime})
+
+            def equations(variables, data_points):
+                    S, Rotation, E, N = variables
+                    eqs = []
+
+                    for data in data_points:
+                        X = data["X"]
+                        Y = data["Y"]
+                        X_prime = data["X_prime"]
+                        Y_prime = data["Y_prime"]
+
+                        eq1 = S * np.cos(Rotation) * X - S * np.sin(Rotation) * Y + E - X_prime
+                        eq2 = S * np.sin(Rotation) * X + S * np.cos(Rotation) * Y + N - Y_prime
+                        eqs.extend([eq1, eq2])
+
+                    return eqs
+                # Initial guess for variables [S, Rotation, E, N]
+            initial_guess = [1, 0, x2, y2]
+
+            # Perform the least squares optimization for all data points
+            result, _ = leastsq(equations, initial_guess, args=(data_points,))
+            S_solution, Rotation_solution, E_solution, N_solution = result
+        Rotation_degrees = (180 / math.pi) * Rotation_solution
+        rDeg = Rotation_degrees - (360*round(Rotation_degrees/360))
+        print("S:", S_solution)
+        print("Rotation (degrees):", rDeg)
+        print("E:", E_solution)
+        print("N:", N_solution)
 
 if __name__ == '__main__':
     app.run(debug=True)

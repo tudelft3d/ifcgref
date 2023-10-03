@@ -1,45 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>goereferenced points</title>
+    <title>georeferenced points</title>
 </head>
 <body>
-    <h1>Add goereferenced points</h1>
-    
+    <h1>Add georeferenced points</h1>
+
     {% if message %}
     <pre>{{ message | safe }}</pre>
     {% endif %}
-    
-    <form method="POST">
-        <label for="Num">Enter the number of extra surveyed points:</label>
-        <input type="text" id="Num" name="Num">
-        <input type="submit" value="Set">
-    </form>
 
-    <div id="tableContainer">
-        <!-- Use Jinja2 to generate the table based on the table_content data -->
-        {% if Num %}
-        <table border="1">
-            <tr>
-                <th>x</th>
-                <th>y</th>
-                <th>z</th>
-                <th>x'</th>
-                <th>y'</th>
-                <th>z'</th>
-            </tr>
-            {% for row in range(Num) %}
-            <tr>
-                <td><input type="text" name="x{{ row }}"></td>
-                <td><input type="text" name="y{{ row }}"></td>
-                <td><input type="text" name="z{{ row }}"></td>
-                <td><input type="text" name="x_prime{{ row }}"></td>
-                <td><input type="text" name="y_prime{{ row }}"></td>
-                <td><input type="text" name="z_prime{{ row }}"></td>
-            </tr>
-            {% endfor %}
-        </table>
-        {% endif %}
-    </div>
+    {% if Num %}
+        <form method="POST" action="/calc">
+            <div id="tableContainer">
+                <!-- Use Jinja2 to generate the table based on the table_content data -->
+                <table border="1">
+                    <tr>
+                        <th>x</th>
+                        <th>y</th>
+                        <th>z</th>
+                        <th>x'</th>
+                        <th>y'</th>
+                        <th>z'</th>
+                    </tr>
+                    {% for row in range(Num) %}
+                    <tr>
+                        <td><input type="text" name="x{{ row }}"></td>
+                        <td><input type="text" name="y{{ row }}"></td>
+                        <td><input type="text" name="z{{ row }}"></td>
+                        <td><input type="text" name="x_prime{{ row }}"></td>
+                        <td><input type="text" name="y_prime{{ row }}"></td>
+                        <td><input type="text" name="z_prime{{ row }}"></td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            <input type="submit" value="Submit">
+        </form>
+    {% else %}
+        <form method="POST">
+                <label for="Num">Enter the number of extra surveyed points:</label>
+                <input type="text" id="Num" name="Num">
+                <input type="submit" value="Set">
+        </form>
+    {% endif %}
+
 </body>
 </html>
