@@ -14,6 +14,9 @@ import numpy as np
 import math
 from scipy.optimize import leastsq
 import pandas as pd
+import json
+import os
+from shapely.geometry import Polygon, mapping
 
 
 app = Flask(__name__)
@@ -174,7 +177,8 @@ def infoExt(filename , epsgCode):
     session['x2'] = x2
     session['y2'] = y2
     session['z1'] = z1
-
+    session['Longitude'] = y0
+    session['Latitude'] = x0
 
     return message
 
@@ -343,7 +347,7 @@ def calculate(filename):
         dg = pd.DataFrame(list(IfcMapConversion.__dict__.items()), columns= ['property', 'value'])
         html_table_f = df.to_html()
         html_table_g = dg.to_html()
-        return render_template('result.html', table_f=html_table_f, table_g=html_table_g)
+        return render_template('result.html', filename=filename, table_f=html_table_f, table_g=html_table_g)
     
 def fileOpener(filename):
     fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -355,6 +359,56 @@ def fileOpener(filename):
         print("Error opening IFC file:", str(e))  # Add this line for debugging
         return None
 
+@app.route('/show/<filename>', methods=['GET', 'POST'])
+def visualize(filename):
+    fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    fn_output = re.sub('\.ifc$','_georeferenced.ifc', fn)
+    ifc_file = ifcopenshell.open(fn_output)
+    IfcMapConversion, IfcProjectedCRS = georeference_ifc.get_mapconversion_crs(ifc_file=ifc_file)
+    E = IfcMapConversion.Eastings
+    N = IfcMapConversion.Northings
+    S = IfcMapConversion.Scale
+    ortz = IfcMapConversion.OrthogonalHeight
+    cos = IfcMapConversion.XAxisAbscissa
+    sin = IfcMapConversion.XAxisOrdinate
+    target_epsg = "EPSG:"+str(session.get('target_epsg'))
+    transformer2 = Transformer.from_crs(target_epsg,"EPSG:4326")
+    #Adding IFC boundries to geojson
+    Points = ifc_file.by_type("IfcPolygonalFaceSet")[0].Coordinates.CoordList
+    vertlist = []
+    for point in Points:
+        x = S * cos * point[0] - S * sin * point[1] + E 
+        y = S * sin * point[0] + S * cos * point[1] + N 
+        z = point[2] + ortz
+        x2,y2 = transformer2.transform(x,y)
+        vert = y2,x2
+        vertlist.append(vert)
+    vertlist.append(vertlist[0])
+
+    if len(vertlist) >= 3:  # A polygon needs at least 3 vertices
+        polygon = Polygon(vertlist)
+
+        geo_json_dict = {
+            "type": "FeatureCollection",
+            "features": []
+            }
+        
+
+        feature = {
+            'type': 'Feature',
+            'properties': {},
+            'geometry': mapping(polygon)
+        }
+
+        geo_json_dict["features"].append(feature)
+        fn_ = re.sub('\.ifc$','.geojson', filename)
+        geo_json_file = open(os.path.join('./MapDev/', fn_), 'w+')
+        geo_json_file.write(json.dumps(geo_json_dict, indent=2))
+        geo_json_file.close()
+        filename = geo_json_file.name
+        Latitude =session.get('Latitude')
+        Longitude =session.get('Longitude')
+    return render_template('Viewer.html', filename=filename, Latitude=Latitude, Longitude=Longitude)
 
 
 if __name__ == '__main__':

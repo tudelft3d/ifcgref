@@ -19,14 +19,14 @@
         container: 'map',
         style:
             'https://api.maptiler.com/maps/streets-v2/style.json?key=0WhPYrwttynpLXQDYYip',
-        center: [4.369247913333333, 52.00521087638889],
+        center: [Longitude , Latitude],
         zoom: 16
     });
 
     map.on('load', () => {
         map.addSource('main', {
             'type': 'geojson',
-            'data': 'https://raw.githubusercontent.com/tudelft3d/GeorefIFC/main/MapDev/polygons.geojson'
+            'data': Filename
         });
 
         map.addLayer({

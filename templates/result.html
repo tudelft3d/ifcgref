@@ -9,5 +9,8 @@
 
     <h1>IFCMapConversion Data</h1>
     {{ table_g | safe }}
+    <form method="POST" action={{ url_for('visualize', filename=filename) }}>
+        <input type="submit" value="Show on Map">
+    </form>
 </body>
 </html>
