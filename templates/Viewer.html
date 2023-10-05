@@ -15,18 +15,22 @@
 <body>
 <div id="map"></div>
 <script>
+    var Lat = '{{ Latitude }}';
+    var Long = '{{ Longitude }}';
+    var fn = '{{ filename }}';
+   
     const map = new maplibregl.Map({
         container: 'map',
         style:
             'https://api.maptiler.com/maps/streets-v2/style.json?key=0WhPYrwttynpLXQDYYip',
-        center: [Latitude, Longitude],
+        center: [Lat, Long],
         zoom: 16
     });
 
     map.on('load', () => {
         map.addSource('main', {
             'type': 'geojson',
-            'data': Filename
+            'data': fn
         });
 
         map.addLayer({

@@ -236,9 +236,11 @@ def survey_points(filename):
                 message = "Please enter zero or a positive integer."
                 return render_template('survey.html', filename=filename, message=message)
         except ValueError:
-            message = "Please enter a valid integer."
+            message = "Please enter zero or a positive integer."
             return render_template('survey.html', filename=filename, message=message)
         session['rows'] = Num
+        if Num == 0:
+            return redirect(url_for('calculate', filename=filename))
     return render_template('survey.html', filename=filename, message=message, Num=Num)
 
 def local_trans(filename):
@@ -269,7 +271,7 @@ def local_trans(filename):
 
 @app.route('/calc/<filename>', methods=['GET', 'POST'])
 def calculate(filename):
-    if request.method == 'POST':
+    #if request.method == 'POST':
         # Access the form data by iterating through the rows
         rows = session.get('rows')
         x2 = session.get('x2')
