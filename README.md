@@ -1,6 +1,8 @@
 # Georeferencing IFC Files with Flask
 
-This Flask application allows you to georeference IFC (Industry Foundation Classes) files, which are commonly used for exchanging Building Information Model (BIM) data. Georeferencing involves adding geographic coordinates (latitude and longitude) to a BIM model to place it in the real world.
+## Overview
+
+This Flask-based application serves the purpose of georeferencing IFC (Industry Foundation Classes) files, which are commonly used in the context of Building Information Modeling (BIM) data exchange. To accomplish georeferencing, the application leverages the **IFCMapConversion** entity in IFC4, which facilitates the updating of data and the conversion from a local Coordinate Reference System (CRS), often referred to as the engineering coordinate system, into the coordinate reference system of the underlying map (Projected CRS).
 
 ## Prerequisites
 
@@ -55,3 +57,11 @@ You can customize the application by modifying the Flask routes, templates, and 
 - This application uses the Flask web framework for the user interface.
 - It leverages the ifcopenshell library for working with IFC files.
 - Georeferencing is performed using pyproj for coordinate transformations.
+
+## References
+
+BuildingSMART. IFC Specifications database. https://technical.buildingsmart.org/standards/ifc/ifc-schema-specifications/
+
+BuildingSMART Australasia (2020). User Guide for Geo-referencing in IFC, version 2.0. https://www.buildingsmart.org/wp-content/uploads/2020/02/User-Guide-for-Geo-referencing-in-IFC-v2.0.pdf
+
+https://github.com/stijngoedertier/georeference-ifc#readme
