@@ -219,24 +219,25 @@ def convert_crs(filename):
 
         if message.endswith("______"):
             # Pass x2, y2, and z1 to the survey_points route
-            return redirect(url_for('survey_points', filename=filename))
+            return redirect(url_for('survey_points', filename=filename, message= message))
         return render_template('convert.html', filename=filename, message=message)
 
     return render_template('convert.html', filename=filename)
 
-@app.route('/survey/<filename>', methods=['GET', 'POST'])
-def survey_points(filename):
-    message = local_trans(filename)
+@app.route('/survey/<filename>/<message>', methods=['GET', 'POST'])
+def survey_points(filename, message):
+    message += local_trans(filename)
+    message += '\n\nThe results become more accurate as you provide more georeferenced points.\nWithout any additional georeferenced points, it is not possible to calculate scale and rotation factors accurately, and the model is assumed to be not rotated and scaled.\n'
     Num = []
 
     if request.method == 'POST':
         try:
             Num = int(request.form['Num'])
             if Num < 0:
-                message = "Please enter zero or a positive integer."
+                message += "Please enter zero or a positive integer."
                 return render_template('survey.html', filename=filename, message=message)
         except ValueError:
-            message = "Please enter zero or a positive integer."
+            message += "Please enter zero or a positive integer."
             return render_template('survey.html', filename=filename, message=message)
         session['rows'] = Num
         if Num == 0:
@@ -256,7 +257,7 @@ def local_trans(filename):
         if local_placement.is_a("IfcAxis2Placement3D"):
             local_origin = local_placement.Location.Coordinates
             bx, by, bz = map(float, local_origin)
-            message += "First point Local coordinates:" + str(local_origin)
+            message += "\nFirst point Local coordinates:" + str(local_origin)
         else:
                 message += "Local placement is not IfcAxis2Placement3D."
     else:
