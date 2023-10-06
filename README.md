@@ -52,11 +52,16 @@ This will start the Flask development server.
 
 You can customize the application by modifying the Flask routes, templates, and logic in app.py to suit your specific requirements.
 
-## Acknowledgments
+## Credits
 
 - This application uses the Flask web framework for the user interface.
 - It leverages the ifcopenshell library for working with IFC files.
 - Georeferencing is performed using pyproj for coordinate transformations.
+
+## Acknowledgments
+
+This project has received funding from the European Union’s Horizon Europe programme under Grant Agreement No.101058559 (CHEK: Change toolkit for digital building permit).
+
 
 ## References
 
