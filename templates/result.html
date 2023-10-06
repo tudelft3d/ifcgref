@@ -12,5 +12,7 @@
     <form method="POST" action={{ url_for('visualize', filename=filename) }}>
         <input type="submit" value="Show on Map">
     </form>
+    
+    <a href="{{ url_for('download', filename=filename) }}" download><button>Download Georeferenced IFC</button></a>
 </body>
 </html>

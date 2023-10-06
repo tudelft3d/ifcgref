@@ -412,6 +412,28 @@ def visualize(filename):
         Longitude =session.get('Longitude')
     return render_template('Viewer.html', filename=filename, Latitude=Latitude, Longitude=Longitude)
 
+@app.route('/download/<filename>', methods=['GET'])
+def download(filename):
+    # Define the path to the GeoJSON file
+    fn = re.sub('\.ifc$','_georeferenced.ifc', filename)
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], fn)
+
+    # Ensure the file exists
+    if os.path.exists(file_path):
+        # Set the response headers to indicate a file download
+        response = make_response()
+        response.headers['Content-Type'] = 'application/octet-stream'
+        response.headers['Content-Disposition'] = f'attachment; filename={fn}'
+        
+        # Read the file content and add it to the response
+        with open(file_path, 'rb') as file:
+            response.data = file.read()
+        
+        return response
+    else:
+        # Return a 404 error if the file doesn't exist
+        return 'File not found', 404
+    
 
 if __name__ == '__main__':
     app.run(debug=True)
