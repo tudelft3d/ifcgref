@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, render_template_string # Import the redirect function
+from flask import Flask, render_template, request, redirect, url_for, session, make_response, render_template_string # Import the redirect function
 from werkzeug.utils import secure_filename
 import os
 import ifcopenshell
@@ -19,7 +19,7 @@ import os
 from shapely.geometry import Polygon, mapping
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static', static_folder='static')
 app.secret_key = '88746898'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 ALLOWED_EXTENSIONS = {'ifc'}  # Define allowed file extensions as a set
@@ -404,10 +404,10 @@ def visualize(filename):
 
         geo_json_dict["features"].append(feature)
         fn_ = re.sub('\.ifc$','.geojson', filename)
-        geo_json_file = open(os.path.join('./MapDev/', fn_), 'w+')
+        geo_json_file = open(os.path.join('./static/', fn_), 'w+')
         geo_json_file.write(json.dumps(geo_json_dict, indent=2))
         geo_json_file.close()
-        filename = geo_json_file.name
+        filename = "."+ geo_json_file.name
         Latitude =session.get('Latitude')
         Longitude =session.get('Longitude')
     return render_template('Viewer.html', filename=filename, Latitude=Latitude, Longitude=Longitude)
