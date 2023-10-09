@@ -1,21 +1,18 @@
-from flask import Flask, render_template, request, redirect, url_for, session, make_response, render_template_string # Import the redirect function
+from flask import Flask, render_template, request, redirect, url_for, session, make_response # Import the redirect function
 from werkzeug.utils import secure_filename
 import os
 import ifcopenshell
 import ifcopenshell.geom
 import georeference_ifc
 import re
-import sys
 import pyproj
 from pyproj import Transformer
 import pint
-from pint.errors import UndefinedUnitError
 import numpy as np
 import math
 from scipy.optimize import leastsq
 import pandas as pd
 import json
-import os
 from shapely.geometry import Polygon, mapping
 
 
