@@ -25,6 +25,26 @@ ALLOWED_EXTENSIONS = {'ifc'}  # Define allowed file extensions as a set
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def georef(filename):
+    geo = False
+    ifc_file = fileOpener(filename)
+    #check ifc version
+    version = ifc_file.schema
+    message = f"IFC version: {version}\n"
+    # Check the file is georefed or not
+    mapconversion = None
+    crs = None
+
+    if ifc_file.schema == 'IFC4':
+        project = ifc_file.by_type("IfcProject")[0]
+        for c in (m for c in project.RepresentationContexts for m in c.HasCoordinateOperation):
+            mapconversion = c
+            crs = c.TargetCRS
+        if mapconversion is not None:
+            message += "IFC file is georeferenced.\n"
+            geo = True
+    return message , geo
+        
 def infoExt(filename , epsgCode):
     ureg = pint.UnitRegistry()
     ifc_file = fileOpener(filename)
@@ -42,15 +62,10 @@ def infoExt(filename , epsgCode):
     # Check the file is georefed or not
     mapconversion = None
     crs = None
+    if ifc_file.schema != 'IFC4':
+        message += "Only IFC4 is supported.\n"
+        return message
 
-    if ifc_file.schema == 'IFC4':
-        project = ifc_file.by_type("IfcProject")[0]
-        for c in (m for c in project.RepresentationContexts for m in c.HasCoordinateOperation):
-            mapconversion = c
-            crs = c.TargetCRS
-        if mapconversion is not None:
-            message += "IFC file is georeferenced."
-            return message
     bx,by,bz = 0,0,0
     # Find local origin
     if hasattr(ifc_file.by_type("IfcSite")[0], "ObjectPlacement") and ifc_file.by_type("IfcSite")[0].ObjectPlacement.is_a("IfcLocalPlacement"):
@@ -84,14 +99,7 @@ def infoExt(filename , epsgCode):
         return message
     target_epsg = "EPSG:"+str(epsgCode)
     transformer = Transformer.from_crs("EPSG:4326", target_epsg)
-
-
-
     x1,y1,z1 = transformer.transform(x0,y0,RElev)
-
-
-
-
     # IFC length unit name
     ifc_units = ifc_file.by_type("IfcUnitAssignment")[0].Units
     for ifc_unit in ifc_units:
@@ -151,9 +159,6 @@ def infoExt(filename , epsgCode):
         message += "measurement error"
         return message
 
-
-
-
     message += f"Longitude: {round(y0,4)}\n"
     message += f"Latitude: {round(x0,4)}\n"
     message += f"Reference Elevation: {RElev}\n"
@@ -179,8 +184,6 @@ def infoExt(filename , epsgCode):
 
     return message
 
-    
-
 @app.route('/')
 def index():
     return render_template('upload.html')
@@ -194,14 +197,21 @@ def upload_file():
         return "No selected file"
     if file and allowed_file(file.filename):  # Check if the file extension is allowed
         filename = secure_filename(file.filename)
+        message, geo = georef(filename)
+        if geo == True:
+            ifc_file = fileOpener(filename)
+            IfcMapConversion, IfcProjectedCRS = georeference_ifc.get_mapconversion_crs(ifc_file=ifc_file)
+            df = pd.DataFrame(list(IfcProjectedCRS.__dict__.items()), columns= ['property', 'value'])
+            dg = pd.DataFrame(list(IfcMapConversion.__dict__.items()), columns= ['property', 'value'])
+            html_table_f = df.to_html()
+            html_table_g = dg.to_html()
+            return render_template('result.html', filename=filename, table_f=html_table_f, table_g=html_table_g, message=message)
+        
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        #ifc_file = ifcopenshell.open(filename)
-
         return redirect(url_for('convert_crs', filename=filename))  # Redirect to EPSG code input page
     else:
         return render_template('upload.html', error_message="Invalid file format. Please upload a .ifc file.")
     
-   
 @app.route('/convert/<filename>', methods=['GET', 'POST'])
 def convert_crs(filename):
     if request.method == 'POST':
@@ -213,7 +223,6 @@ def convert_crs(filename):
         session['target_epsg'] = epsg_code
        # Call the infoExt function and unpack the results
         message = infoExt(filename, epsg_code)
-
         if message.endswith("______"):
             # Pass x2, y2, and z1 to the survey_points route
             return redirect(url_for('survey_points', filename=filename, message= message))
@@ -432,6 +441,5 @@ def download(filename):
         # Return a 404 error if the file doesn't exist
         return 'File not found', 404
     
-
 if __name__ == '__main__':
     app.run(debug=True)
