@@ -233,7 +233,7 @@ def convert_crs(filename):
 @app.route('/survey/<filename>/<message>', methods=['GET', 'POST'])
 def survey_points(filename, message):
     message += local_trans(filename)
-    message += '\n\nThe results become more accurate as you provide more georeferenced points.\nWithout any additional georeferenced points, it is not possible to calculate scale and rotation factors accurately, and the model is assumed to be not rotated and scaled.\n'
+    message += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is not scaled and rotation is derived from True North attribute\'s direction.\n'
     Num = []
 
     if request.method == 'POST':
@@ -285,11 +285,18 @@ def calculate(filename):
         y2 = session.get('y2')
         bx = session.get('bx')
         by = session.get('by')
+        fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        ifc_file = fileOpener(filename)
 
         data_points = []
         data_points.append({"X": bx, "Y": by, "X_prime": x2, "Y_prime": y2})
         if rows == 0:
-            S_solution, Rotation_solution, E_solution, N_solution = 1, 0, x2, y2
+            Rotation_solution = 0
+            if hasattr(ifc_file.by_type("IfcGeometricRepresentationContext")[0], "TrueNorth") and ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth.is_a("IfcDirection"):
+                xord , xabs = ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth[0]
+                xord , xabs = round(float(xord),6) , round(float(xabs),6)
+                Rotation_solution = math.atan2(xord,xabs)
+            S_solution, E_solution, N_solution = 1, x2, y2
         else:
             
             for row in range(rows):
@@ -335,11 +342,10 @@ def calculate(filename):
             # Perform the least squares optimization for all data points
             result, _ = leastsq(equations, initial_guess, args=(data_points,))
             S_solution, Rotation_solution, E_solution, N_solution = result
+
         Rotation_degrees = (180 / math.pi) * Rotation_solution
         rDeg = Rotation_degrees - (360*round(Rotation_degrees/360))
 
-        fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        ifc_file = fileOpener(filename)
         target_epsg = "EPSG:"+str(session.get('target_epsg'))
         georeference_ifc.set_mapconversion_crs(ifc_file=ifc_file,
                                         target_crs_epsg_code=target_epsg,
