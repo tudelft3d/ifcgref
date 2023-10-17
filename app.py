@@ -233,7 +233,7 @@ def convert_crs(filename):
 @app.route('/survey/<filename>/<message>', methods=['GET', 'POST'])
 def survey_points(filename, message):
     message += local_trans(filename)
-    message += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is not scaled and rotation is derived from True North attribute\'s direction.\n'
+    message += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is not scaled and rotation is derived from TrueNorth direction.\n'
     Num = []
 
     if request.method == 'POST':
