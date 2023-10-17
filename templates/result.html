@@ -8,7 +8,7 @@
     {% if message %}
     <pre>{{ message | safe }}</pre>
     {% endif %}
-    
+
     <h1>IFCProjectedCRS Data</h1>
     {{ table_f | safe }}
 
@@ -17,7 +17,10 @@
     <form method="POST" action={{ url_for('visualize', filename=filename) }}>
         <input type="submit" value="Show on Map">
     </form>
-    
+
+    {% if not message %}
     <a href="{{ url_for('download', filename=filename) }}" download><button>Download Georeferenced IFC</button></a>
+    {% endif %}
+
 </body>
 </html>
