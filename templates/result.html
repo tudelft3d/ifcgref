@@ -4,6 +4,11 @@
     <title>Results</title>
 </head>
 <body>
+
+    {% if message %}
+    <pre>{{ message | safe }}</pre>
+    {% endif %}
+    
     <h1>IFCProjectedCRS Data</h1>
     {{ table_f | safe }}
 
