@@ -9,13 +9,6 @@
     <!-- Display the messages from the 'infoExt' function -->
     {% if message %}
     <pre>{{ message | safe }}</pre>
-
-    <!-- {% if message.endswith("______") %}
-    <form method="POST" action="/survey">
-        <input type="submit" value="Next">
-        <a href="/"><input type="button" value="Back"></a>
-    </form>
-    {% endif %} -->
     {% endif %}
     
     <form method="POST">
