@@ -14,6 +14,7 @@ from scipy.optimize import leastsq
 import pandas as pd
 import json
 from shapely.geometry import Polygon, mapping
+import ifcopenshell.util.placement
 
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
@@ -197,6 +198,7 @@ def upload_file():
         return "No selected file"
     if file and allowed_file(file.filename):  # Check if the file extension is allowed
         filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         message, geo = georef(filename)
         if geo == True:
             ifc_file = fileOpener(filename)
@@ -207,7 +209,6 @@ def upload_file():
             html_table_g = dg.to_html()
             return render_template('result.html', filename=filename, table_f=html_table_f, table_g=html_table_g, message=message)
         
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         return redirect(url_for('convert_crs', filename=filename))  # Redirect to EPSG code input page
     else:
         return render_template('upload.html', error_message="Invalid file format. Please upload a .ifc file.")
@@ -292,11 +293,15 @@ def calculate(filename):
         data_points.append({"X": bx, "Y": by, "X_prime": x2, "Y_prime": y2})
         if rows == 0:
             Rotation_solution = 0
+            S_solution = 1
             if hasattr(ifc_file.by_type("IfcGeometricRepresentationContext")[0], "TrueNorth") and ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth.is_a("IfcDirection"):
                 xord , xabs = ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth[0]
                 xord , xabs = round(float(xord),6) , round(float(xabs),6)
                 Rotation_solution = math.atan2(xord,xabs)
-            S_solution, E_solution, N_solution = 1, x2, y2
+                A = math.cos(Rotation_solution)
+                B = math.sin(Rotation_solution)
+                E_solution = x2 - (A*bx) + (B*by)
+                N_solution = y2 - (B*bx) - (A*by)
         else:
             
             for row in range(rows):
@@ -390,11 +395,15 @@ def visualize(filename):
     transformer2 = Transformer.from_crs(target_epsg,"EPSG:4326")
     #Adding IFC boundries to geojson
     Points = ifc_file.by_type("IfcPolygonalFaceSet")[0].Coordinates.CoordList
+    ProxyPlacement = ifc_file.by_type("IFCBUILDINGELEMENTPROXY")[0].ObjectPlacement
+    localProxyPlace = ifcopenshell.util.placement.get_local_placement(ProxyPlacement)
+    lx,ly,lz = localProxyPlace[0,-1] , localProxyPlace[1,-1] , localProxyPlace[2,-1]
+
     vertlist = []
     for point in Points:
-        x = S * cos * point[0] - S * sin * point[1] + E 
-        y = S * sin * point[0] + S * cos * point[1] + N 
-        z = point[2] + ortz
+        x = S * cos * point[0] - S * sin * point[1] + E + lx
+        y = S * sin * point[0] + S * cos * point[1] + N + ly
+        z = point[2] + ortz + lz
         x2,y2 = transformer2.transform(x,y)
         vert = y2,x2
         vertlist.append(vert)
