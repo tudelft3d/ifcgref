@@ -396,14 +396,17 @@ def visualize(filename):
     #Adding IFC boundries to geojson
     Points = ifc_file.by_type("IfcPolygonalFaceSet")[0].Coordinates.CoordList
     ProxyPlacement = ifc_file.by_type("IFCBUILDINGELEMENTPROXY")[0].ObjectPlacement
-    localProxyPlace = ifcopenshell.util.placement.get_local_placement(ProxyPlacement)
-    lx,ly,lz = localProxyPlace[0,-1] , localProxyPlace[1,-1] , localProxyPlace[2,-1]
+    lpMAat = ifcopenshell.util.placement.get_local_placement(ProxyPlacement)
+    mat = np.array(lpMAat)
+    #lx,ly,lz = lpMAat[0,-1] , lpMAat[1,-1] , lpMAat[2,-1]
 
     vertlist = []
     for point in Points:
-        x = S * cos * point[0] - S * sin * point[1] + E + lx
-        y = S * sin * point[0] + S * cos * point[1] + N + ly
-        z = point[2] + ortz + lz
+        p = np.array([[point[0]], [point[1]], [point[2]], [1]])
+        po = np.dot(mat, p)
+        x = S * cos * po[0] - S * sin * po[1] + E #+ lx
+        y = S * sin * po[0] + S * cos * po[1] + N #+ ly
+        z = po[2] + ortz #+ lz
         x2,y2 = transformer2.transform(x,y)
         vert = y2,x2
         vertlist.append(vert)
