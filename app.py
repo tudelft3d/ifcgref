@@ -36,7 +36,7 @@ def georef(filename):
     mapconversion = None
     crs = None
 
-    if ifc_file.schema == 'IFC4':
+    if ifc_file.schema == 'IFC4' or ifc_file.schema == 'IFC4X3_ADD1':
         project = ifc_file.by_type("IfcProject")[0]
         for c in (m for c in project.RepresentationContexts for m in c.HasCoordinateOperation):
             mapconversion = c
@@ -171,6 +171,7 @@ def infoExt(filename , epsgCode):
 
     else:
         message += "No length unit found in the IFC file."
+        return message
     message += f"coeff: {coeff}\n"
     message += "______"
 
@@ -393,7 +394,7 @@ def visualize(filename):
         y0= (float(RLon[0]) + float(RLon[1])/60 + float(RLon[2]+RLon[3]/1000000)/(60*60))
         session['Longitude'] = y0
         session['Latitude'] = x0
-        
+
     ifc_file = ifcopenshell.open(fn_output)
     IfcMapConversion, IfcProjectedCRS = georeference_ifc.get_mapconversion_crs(ifc_file=ifc_file)
     E = IfcMapConversion.Eastings
