@@ -316,18 +316,34 @@ def calculate(filename):
             bx = session.get('bx')
             by = session.get('by')
             data_points.append({"X": bx, "Y": by, "X_prime": x2, "Y_prime": y2})
-        #seperater    
+        #seperater
+        if not Refl and rows == 1:
+            Rotation_solution = 0
+            S_solution = 1
+            if hasattr(ifc_file.by_type("IfcGeometricRepresentationContext")[0], "TrueNorth") and ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth.is_a("IfcDirection"):
+                xord , xabs = ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth[0]
+                xord , xabs = round(float(xord),6) , round(float(xabs),6)
+            else:
+                xord , xabs = 0 , 1
+            Rotation_solution = math.atan2(xord,xabs)
+            A = math.cos(Rotation_solution)
+            B = math.sin(Rotation_solution)
+            E_solution = float(request.form[f'x_prime{0}']) - (A*float(request.form[f'x{0}'])) + (B*float(request.form[f'y_prime{0}']))
+            N_solution = float(request.form[f'y_prime{0}']) - (B*float(request.form[f'x{0}'])) - (A*float(request.form[f'y_prime{0}']))
+        #seperater
         if rows == 0:
             Rotation_solution = 0
             S_solution = 1
             if hasattr(ifc_file.by_type("IfcGeometricRepresentationContext")[0], "TrueNorth") and ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth.is_a("IfcDirection"):
                 xord , xabs = ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth[0]
                 xord , xabs = round(float(xord),6) , round(float(xabs),6)
-                Rotation_solution = math.atan2(xord,xabs)
-                A = math.cos(Rotation_solution)
-                B = math.sin(Rotation_solution)
-                E_solution = x2 - (A*bx) + (B*by)
-                N_solution = y2 - (B*bx) - (A*by)
+            else:
+                xord , xabs = 0 , 1
+            Rotation_solution = math.atan2(xord,xabs)
+            A = math.cos(Rotation_solution)
+            B = math.sin(Rotation_solution)
+            E_solution = x2 - (A*bx) + (B*by)
+            N_solution = y2 - (B*bx) - (A*by)
         else:
             for row in range(rows):
                 x = request.form[f'x{row}']
