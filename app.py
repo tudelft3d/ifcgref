@@ -383,6 +383,17 @@ def fileOpener(filename):
 def visualize(filename):
     fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     fn_output = re.sub('\.ifc$','_georeferenced.ifc', fn)
+    if not os.path.exists(fn_output):
+        fn_output = fn
+        ifc_file = fileOpener(filename)
+        RLat = ifc_file.by_type("IfcSite")[0].RefLatitude
+        RLon = ifc_file.by_type("IfcSite")[0].RefLongitude
+        RElev = ifc_file.by_type("IfcSite")[0].RefElevation
+        x0= (float(RLat[0]) + float(RLat[1])/60 + float(RLat[2]+RLat[3]/1000000)/(60*60))
+        y0= (float(RLon[0]) + float(RLon[1])/60 + float(RLon[2]+RLon[3]/1000000)/(60*60))
+        session['Longitude'] = y0
+        session['Latitude'] = x0
+        
     ifc_file = ifcopenshell.open(fn_output)
     IfcMapConversion, IfcProjectedCRS = georeference_ifc.get_mapconversion_crs(ifc_file=ifc_file)
     E = IfcMapConversion.Eastings
