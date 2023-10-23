@@ -52,15 +52,22 @@ def infoExt(filename , epsgCode):
     #check ifc version
     version = ifc_file.schema
     message = f"IFC version: {version}\n"
+    ifc_site = ifc_file.by_type("IfcSite")
+
 
     #Find Longtitude and Latitude
-    RLat = ifc_file.by_type("IfcSite")[0].RefLatitude
-    RLon = ifc_file.by_type("IfcSite")[0].RefLongitude
-    RElev = ifc_file.by_type("IfcSite")[0].RefElevation
-    x0= (float(RLat[0]) + float(RLat[1])/60 + float(RLat[2]+RLat[3]/1000000)/(60*60))
-    y0= (float(RLon[0]) + float(RLon[1])/60 + float(RLon[2]+RLon[3]/1000000)/(60*60))
+    RLat = ifc_site[0].RefLatitude
+    RLon = ifc_site[0].RefLongitude
+    RElev = ifc_site[0].RefElevation
+    if RLat is not None or RLon is not None:
+        x0= (float(RLat[0]) + float(RLat[1])/60 + float(RLat[2]+RLat[3]/1000000)/(60*60))
+        y0= (float(RLon[0]) + float(RLon[1])/60 + float(RLon[2]+RLon[3]/1000000)/(60*60))
+        session['Refl'] = True
+    else:
+        session['Refl'] = False
+        message += "RefLatitude or RefLongitude not available in the IFC file.\n"
+    Refl = session.get('Refl')
 
-    # Check the file is georefed or not
     mapconversion = None
     crs = None
     if ifc_file.schema != 'IFC4':
@@ -100,7 +107,6 @@ def infoExt(filename , epsgCode):
         return message
     target_epsg = "EPSG:"+str(epsgCode)
     transformer = Transformer.from_crs("EPSG:4326", target_epsg)
-    x1,y1,z1 = transformer.transform(x0,y0,RElev)
     # IFC length unit name
     ifc_units = ifc_file.by_type("IfcUnitAssignment")[0].Units
     for ifc_unit in ifc_units:
@@ -159,10 +165,10 @@ def infoExt(filename , epsgCode):
     else:
         message += "measurement error"
         return message
-
-    message += f"Longitude: {round(y0,4)}\n"
-    message += f"Latitude: {round(x0,4)}\n"
-    message += f"Reference Elevation: {RElev}\n"
+    if Refl:
+        message += f"Longitude: {round(y0,4)}\n"
+        message += f"Latitude: {round(x0,4)}\n"
+        message += f"Reference Elevation: {RElev}\n"
     message += f"CRS Unit: {crsunit}\n"
 
     if ifcunit:
@@ -175,14 +181,15 @@ def infoExt(filename , epsgCode):
     message += f"coeff: {coeff}\n"
     message += "______"
 
-    x2= x1*coeff
-    y2= y1*coeff
-
-    session['x2'] = x2
-    session['y2'] = y2
-    session['z1'] = z1
-    session['Longitude'] = y0
-    session['Latitude'] = x0
+    if Refl:
+        x1,y1,z1 = transformer.transform(x0,y0,RElev)
+        x2= x1*coeff
+        y2= y1*coeff
+        session['x2'] = x2
+        session['y2'] = y2
+        session['z1'] = z1
+        session['Longitude'] = y0
+        session['Latitude'] = x0
 
     return message
 
@@ -234,23 +241,37 @@ def convert_crs(filename):
 
 @app.route('/survey/<filename>/<message>', methods=['GET', 'POST'])
 def survey_points(filename, message):
-    message += local_trans(filename)
-    message += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is not scaled and rotation is derived from TrueNorth direction.\n'
-    Num = []
-
-    if request.method == 'POST':
-        try:
-            Num = int(request.form['Num'])
-            if Num < 0:
+    Refl = session.get('Refl')
+    if Refl:
+        message += local_trans(filename)
+        Num = []
+        if request.method == 'POST':
+            try:
+                Num = int(request.form['Num'])
+                if Num < 0:
+                    message += "Please enter zero or a positive integer."
+                    return render_template('survey.html', filename=filename, message=message)
+            except ValueError:
                 message += "Please enter zero or a positive integer."
                 return render_template('survey.html', filename=filename, message=message)
-        except ValueError:
-            message += "Please enter zero or a positive integer."
-            return render_template('survey.html', filename=filename, message=message)
-        session['rows'] = Num
-        if Num == 0:
-            return redirect(url_for('calculate', filename=filename))
-    return render_template('survey.html', filename=filename, message=message, Num=Num)
+            session['rows'] = Num
+            if Num == 0:
+                return redirect(url_for('calculate', filename=filename))
+        return render_template('survey.html', filename=filename, message=message, Num=Num)
+    else:
+        Num = []
+        if request.method == 'POST':
+            try:
+                Num = int(request.form['Num'])
+                if Num <= 0:
+                    message += "Please enter a positive integer."
+                    return render_template('survey.html', filename=filename, message=message)
+            except ValueError:
+                message += "Please enter a positive integer."
+                return render_template('survey.html', filename=filename, message=message)
+            session['rows'] = Num
+        return render_template('survey.html', filename=filename, message=message, Num=Num)
+
 
 def local_trans(filename):
     ifc_file = fileOpener(filename)
@@ -275,6 +296,8 @@ def local_trans(filename):
     session['bz'] = bz        
 
     message += "\nFirst point Target coordinates:" + "(" + str(x2) + ", " + str(y2) + ", " + str(z1) + ")"
+    message += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is not scaled and rotation is derived from TrueNorth direction.\n'
+
     ifc_file = ifc_file.end_transaction()
     return message
 
@@ -283,15 +306,17 @@ def calculate(filename):
     #if request.method == 'POST':
         # Access the form data by iterating through the rows
         rows = session.get('rows')
-        x2 = session.get('x2')
-        y2 = session.get('y2')
-        bx = session.get('bx')
-        by = session.get('by')
         fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         ifc_file = fileOpener(filename)
-
         data_points = []
-        data_points.append({"X": bx, "Y": by, "X_prime": x2, "Y_prime": y2})
+        Refl = session.get('Refl')
+        if Refl:
+            x2 = session.get('x2')
+            y2 = session.get('y2')
+            bx = session.get('bx')
+            by = session.get('by')
+            data_points.append({"X": bx, "Y": by, "X_prime": x2, "Y_prime": y2})
+        #seperater    
         if rows == 0:
             Rotation_solution = 0
             S_solution = 1
@@ -304,7 +329,6 @@ def calculate(filename):
                 E_solution = x2 - (A*bx) + (B*by)
                 N_solution = y2 - (B*bx) - (A*by)
         else:
-            
             for row in range(rows):
                 x = request.form[f'x{row}']
                 y = request.form[f'y{row}']
@@ -343,7 +367,10 @@ def calculate(filename):
 
                     return eqs
                 # Initial guess for variables [S, Rotation, E, N]
-            initial_guess = [1, 0, x2, y2]
+            if Refl:
+                initial_guess = [1, 0, x2, y2]
+            else:
+                initial_guess = [1,0,0,0]
 
             # Perform the least squares optimization for all data points
             result, _ = leastsq(equations, initial_guess, args=(data_points,))
@@ -390,11 +417,15 @@ def visualize(filename):
         RLat = ifc_file.by_type("IfcSite")[0].RefLatitude
         RLon = ifc_file.by_type("IfcSite")[0].RefLongitude
         RElev = ifc_file.by_type("IfcSite")[0].RefElevation
-        x0= (float(RLat[0]) + float(RLat[1])/60 + float(RLat[2]+RLat[3]/1000000)/(60*60))
-        y0= (float(RLon[0]) + float(RLon[1])/60 + float(RLon[2]+RLon[3]/1000000)/(60*60))
-        session['Longitude'] = y0
-        session['Latitude'] = x0
 
+        if RLat is not None or RLon is not None:
+            x0= (float(RLat[0]) + float(RLat[1])/60 + float(RLat[2]+RLat[3]/1000000)/(60*60))
+            y0= (float(RLon[0]) + float(RLon[1])/60 + float(RLon[2]+RLon[3]/1000000)/(60*60))
+            session['Refl'] = True
+        else:
+            session['Refl'] = False
+
+    Refl = session.get('Refl')
     ifc_file = ifcopenshell.open(fn_output)
     IfcMapConversion, IfcProjectedCRS = georeference_ifc.get_mapconversion_crs(ifc_file=ifc_file)
     E = IfcMapConversion.Eastings
@@ -445,8 +476,12 @@ def visualize(filename):
         geo_json_file.write(json.dumps(geo_json_dict, indent=2))
         geo_json_file.close()
         filename = "."+ geo_json_file.name
-        Latitude =session.get('Latitude')
-        Longitude =session.get('Longitude')
+        if Refl:
+            Latitude =session.get('Latitude')
+            Longitude =session.get('Longitude')
+        else:
+            Latitude =vertlist[0][1][0]
+            Longitude =vertlist[0][0][0]
     return render_template('Viewer.html', filename=filename, Latitude=Latitude, Longitude=Longitude)
 
 @app.route('/download/<filename>', methods=['GET'])
