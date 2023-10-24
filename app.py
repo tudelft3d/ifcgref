@@ -259,6 +259,8 @@ def survey_points(filename, message):
                 return redirect(url_for('calculate', filename=filename))
         return render_template('survey.html', filename=filename, message=message, Num=Num)
     else:
+        message += '\nThe IFC model has no surveyed or georeferenced attribute.\nYou need to provide at least one point in local and projected CRS.'
+        message += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is not scaled and rotation is derived from TrueNorth direction.\n'
         Num = []
         if request.method == 'POST':
             try:
@@ -328,69 +330,70 @@ def calculate(filename):
             Rotation_solution = math.atan2(xord,xabs)
             A = math.cos(Rotation_solution)
             B = math.sin(Rotation_solution)
-            E_solution = float(request.form[f'x_prime{0}']) - (A*float(request.form[f'x{0}'])) + (B*float(request.form[f'y_prime{0}']))
-            N_solution = float(request.form[f'y_prime{0}']) - (B*float(request.form[f'x{0}'])) - (A*float(request.form[f'y_prime{0}']))
+            E_solution = float(request.form[f'x_prime{0}']) - (A*float(request.form[f'x{0}'])) + (B*float(request.form[f'y{0}']))
+            N_solution = float(request.form[f'y_prime{0}']) - (B*float(request.form[f'x{0}'])) - (A*float(request.form[f'y{0}']))
         #seperater
-        if rows == 0:
-            Rotation_solution = 0
-            S_solution = 1
-            if hasattr(ifc_file.by_type("IfcGeometricRepresentationContext")[0], "TrueNorth") and ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth.is_a("IfcDirection"):
-                xord , xabs = ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth[0]
-                xord , xabs = round(float(xord),6) , round(float(xabs),6)
-            else:
-                xord , xabs = 0 , 1
-            Rotation_solution = math.atan2(xord,xabs)
-            A = math.cos(Rotation_solution)
-            B = math.sin(Rotation_solution)
-            E_solution = x2 - (A*bx) + (B*by)
-            N_solution = y2 - (B*bx) - (A*by)
         else:
-            for row in range(rows):
-                x = request.form[f'x{row}']
-                y = request.form[f'y{row}']
-                z = request.form[f'z{row}']
-                x_prime = request.form[f'x_prime{row}']
-                y_prime = request.form[f'y_prime{row}']
-                z_prime = request.form[f'z_prime{row}']
-
-                try:
-                    x = float(x)
-                    y = float(y)
-                    z = float(z)
-                    x_prime = float(x_prime)
-                    y_prime = float(y_prime)
-                    z_prime = float(z_prime)
-                except ValueError:
-                    message = "Invalid input. Please enter only float values."
-                    Num = rows
-                    return render_template('survey.html', message=message, Num=Num)
-
-                data_points.append({"X": x, "Y": y, "X_prime": x_prime, "Y_prime": y_prime})
-
-            def equations(variables, data_points):
-                    S, Rotation, E, N = variables
-                    eqs = []
-
-                    for data in data_points:
-                        X = data["X"]
-                        Y = data["Y"]
-                        X_prime = data["X_prime"]
-                        Y_prime = data["Y_prime"]
-
-                        eq1 = S * np.cos(Rotation) * X - S * np.sin(Rotation) * Y + E - X_prime
-                        eq2 = S * np.sin(Rotation) * X + S * np.cos(Rotation) * Y + N - Y_prime
-                        eqs.extend([eq1, eq2])
-
-                    return eqs
-                # Initial guess for variables [S, Rotation, E, N]
-            if Refl:
-                initial_guess = [1, 0, x2, y2]
+            if rows == 0:
+                Rotation_solution = 0
+                S_solution = 1
+                if hasattr(ifc_file.by_type("IfcGeometricRepresentationContext")[0], "TrueNorth") and ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth.is_a("IfcDirection"):
+                    xord , xabs = ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth[0]
+                    xord , xabs = round(float(xord),6) , round(float(xabs),6)
+                else:
+                    xord , xabs = 0 , 1
+                Rotation_solution = math.atan2(xord,xabs)
+                A = math.cos(Rotation_solution)
+                B = math.sin(Rotation_solution)
+                E_solution = x2 - (A*bx) + (B*by)
+                N_solution = y2 - (B*bx) - (A*by)
             else:
-                initial_guess = [1,0,0,0]
+                for row in range(rows):
+                    x = request.form[f'x{row}']
+                    y = request.form[f'y{row}']
+                    z = request.form[f'z{row}']
+                    x_prime = request.form[f'x_prime{row}']
+                    y_prime = request.form[f'y_prime{row}']
+                    z_prime = request.form[f'z_prime{row}']
 
-            # Perform the least squares optimization for all data points
-            result, _ = leastsq(equations, initial_guess, args=(data_points,))
-            S_solution, Rotation_solution, E_solution, N_solution = result
+                    try:
+                        x = float(x)
+                        y = float(y)
+                        z = float(z)
+                        x_prime = float(x_prime)
+                        y_prime = float(y_prime)
+                        z_prime = float(z_prime)
+                    except ValueError:
+                        message = "Invalid input. Please enter only float values."
+                        Num = rows
+                        return render_template('survey.html', message=message, Num=Num)
+
+                    data_points.append({"X": x, "Y": y, "X_prime": x_prime, "Y_prime": y_prime})
+
+                def equations(variables, data_points):
+                        S, Rotation, E, N = variables
+                        eqs = []
+
+                        for data in data_points:
+                            X = data["X"]
+                            Y = data["Y"]
+                            X_prime = data["X_prime"]
+                            Y_prime = data["Y_prime"]
+
+                            eq1 = S * np.cos(Rotation) * X - S * np.sin(Rotation) * Y + E - X_prime
+                            eq2 = S * np.sin(Rotation) * X + S * np.cos(Rotation) * Y + N - Y_prime
+                            eqs.extend([eq1, eq2])
+
+                        return eqs
+                    # Initial guess for variables [S, Rotation, E, N]
+                if Refl:
+                    initial_guess = [1, 0, x2, y2]
+                else:
+                    initial_guess = [1,0,0,0]
+
+                # Perform the least squares optimization for all data points
+                result, _ = leastsq(equations, initial_guess, args=(data_points,))
+                S_solution, Rotation_solution, E_solution, N_solution = result
 
         Rotation_degrees = (180 / math.pi) * Rotation_solution
         rDeg = Rotation_degrees - (360*round(Rotation_degrees/360))
