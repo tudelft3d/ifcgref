@@ -15,6 +15,8 @@ import pandas as pd
 import json
 from shapely.geometry import Polygon, mapping
 import ifcopenshell.util.placement
+import subprocess
+import time
 
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
@@ -455,52 +457,100 @@ def visualize(filename):
     sin = IfcMapConversion.XAxisOrdinate
     target_epsg = "EPSG:"+str(session.get('target_epsg'))
     transformer2 = Transformer.from_crs(target_epsg,"EPSG:4326")
-    #Adding IFC boundries to geojson
-    Points = ifc_file.by_type("IfcPolygonalFaceSet")[0].Coordinates.CoordList
-    ProxyPlacement = ifc_file.by_type("IFCBUILDINGELEMENTPROXY")[0].ObjectPlacement
-    lpMAat = ifcopenshell.util.placement.get_local_placement(ProxyPlacement)
-    mat = np.array(lpMAat)
-    #lx,ly,lz = lpMAat[0,-1] , lpMAat[1,-1] , lpMAat[2,-1]
+    #create JSON file
+    json_dict = {
+    "Filepaths": {
+        "Input" : ['./uploads/'+filename],
+        "Output" : "./envelop/"
+    },
+    "voxelSize" : {
+        "xy" : 1,
+        "z" : 1
+    },
+    "Footprint elevation" : 0.15,
+    "Output report" : 1,
+    "LoD output" : [0.2],
+    "Ignore Proxy" : 1
+    }
 
-    vertlist = []
-    for point in Points:
-        p = np.array([[point[0]], [point[1]], [point[2]], [1]])
-        po = np.dot(mat, p)
-        x = S * cos * po[0] - S * sin * po[1] + E #+ lx
-        y = S * sin * po[0] + S * cos * po[1] + N #+ ly
-        z = po[2] + ortz #+ lz
-        x2,y2 = transformer2.transform(x,y)
-        vert = y2,x2
-        vertlist.append(vert)
-    vertlist.append(vertlist[0])
 
-    if len(vertlist) >= 3:  # A polygon needs at least 3 vertices
-        polygon = Polygon(vertlist)
+    fnjson = re.sub('\.ifc$','.json', filename)
+    json_file = open(os.path.join('envelop', fnjson), 'w+')
+    json_file.write(json.dumps(json_dict, indent=2))
+    json_file.close()
 
-        geo_json_dict = {
-            "type": "FeatureCollection",
-            "features": []
-            }
-        
+    # Construct the full file paths relative to the current working directory
+    path1 = os.path.join(os.getcwd(), 'envelop','Env.exe')
+    path2 = os.path.join(os.getcwd(), 'envelop', fnjson)
+    result = subprocess.Popen([path1 , path2],    stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL)
+    while result.poll() is None:    time.sleep(0.5)
+    if result.returncode == 0:
+        print("\r", "Success")
 
-        feature = {
-            'type': 'Feature',
-            'properties': {},
-            'geometry': mapping(polygon)
+    # Load the JSON data from the file
+    fncjson = re.sub('\.json$','.city.json', fnjson)
+    with open(os.path.join('envelop', fncjson), 'r') as cityjson_file:
+        data = json.load(cityjson_file)
+
+    # Extract the CityObjects dictionary
+    city_objects = data.get("CityObjects", {})
+    poly = []
+    # Iterate through the CityObjects
+    for object_id, city_object in city_objects.items():
+        attributes = city_object.get("attributes", {})
+        geometry = city_object.get("geometry", [])
+        coordinates = data.get("vertices", [])
+
+        # Check if this object has the "RoofSurface" type
+        for geom in geometry:
+            semantics = geom.get("semantics", {})
+            surfaces = semantics.get("surfaces", [])
+
+            if any(surface.get("type") == "RoofSurface" for surface in surfaces):
+                print(f"Object ID: {object_id}")
+                print(f"Coordinates of RoofSurface:")
+                for boundary in geom.get("boundaries", []):
+                    for b in boundary:
+                        pg = []
+                        for coordinate_id in b:
+                            if 0 <= coordinate_id < len(coordinates):
+                                x,y,z = coordinates[coordinate_id]
+                                po = (x/1000),(y/1000),(z/1000)
+                                xx = S * cos * po[0] - S * sin * po[1] + E
+                                yy = S * sin * po[0] + S * cos * po[1] + N
+                                zz = po[2] + ortz
+                                x2,y2 = transformer2.transform(xx,yy)
+                                vert = y2,x2
+                                pg.append(vert)
+                        pg.append(pg[0])
+                        poly.append(pg)
+
+    polygon = Polygon(poly[0],holes = [poly[1]])
+    geo_json_dict = {
+        "type": "FeatureCollection",
+        "features": []
         }
+    
 
-        geo_json_dict["features"].append(feature)
-        fn_ = re.sub('\.ifc$','.geojson', filename)
-        geo_json_file = open(os.path.join('./static/', fn_), 'w+')
-        geo_json_file.write(json.dumps(geo_json_dict, indent=2))
-        geo_json_file.close()
-        filename = "."+ geo_json_file.name
-        if Refl:
-            Latitude =session.get('Latitude')
-            Longitude =session.get('Longitude')
-        else:
-            Latitude =vertlist[0][1][0]
-            Longitude =vertlist[0][0][0]
+    feature = {
+        'type': 'Feature',
+        'properties': {},
+        'geometry': mapping(polygon)
+    }
+
+    geo_json_dict["features"].append(feature)
+    fn_ = re.sub('\.ifc$','.geojson', filename)
+    geo_json_file = open(os.path.join('./static/', fn_), 'w+')
+    geo_json_file.write(json.dumps(geo_json_dict, indent=2))
+    geo_json_file.close()
+    filename = "."+ geo_json_file.name
+    if Refl:
+        Latitude =session.get('Latitude')
+        Longitude =session.get('Longitude')
+    else:
+        Latitude =poly[0][1][0]
+        Longitude =poly[0][0][0]
     return render_template('Viewer.html', filename=filename, Latitude=Latitude, Longitude=Longitude)
 
 @app.route('/download/<filename>', methods=['GET'])
