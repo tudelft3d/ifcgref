@@ -117,50 +117,33 @@ def infoExt(filename , epsgCode):
                 ifcunit = ifc_unit.Prefix + ifc_unit.Name
             else:
                 ifcunit = ifc_unit.Name
-    # Map units to Pint unit
-    unit_mapping = {
-        "METRE": ureg.meter,
-        "METER": ureg.meter,
-        "CENTIMETRE": ureg.centimeter,
-        "CENTIMETER": ureg.centimeter,
-        "MILLIMETRE": ureg.millimeter,
-        "MILLIMETER": ureg.millimeter,
-        "INCH": ureg.inch,
-        "FOOT": ureg.foot,
-        "YARD": ureg.yard,
-        "MILE": ureg.mile,
-        "NAUTICAL_MILE": ureg.nautical_mile,
-        "metre": ureg.meter,
-        "meter": ureg.meter,
-        "centimeter": ureg.centimeter,
-        "centimetre": ureg.centimeter,
-        "millimeter": ureg.millimeter,
-        "millimetre": ureg.millimeter,
-        "inch": ureg.inch,
-        "foot": ureg.foot,
-        "yard": ureg.yard,
-        "mile": ureg.mile,
-        "nautical_mile": ureg.nautical_mile,
-        # Add more mappings as needed
-    }
-
-    try:
-        if ifcunit in unit_mapping:
-            quantity = 1 * unit_mapping[ifcunit]
-            ifcmeter = quantity.to(ureg.meter).magnitude
-        else:
-            ifcmeter = None
+    try: 
+        quantity = unitmapper(ifcunit)
+        ifcmeter = quantity.to(ureg.meter).magnitude
     except:
         ifcmeter = None
-
-    try:
-        if crsunit in unit_mapping:
-            quantity = 1 * unit_mapping[crsunit]
-            crsmeter = quantity.to(ureg.meter).magnitude
-        else:
-            crsmeter = None
+    # try:
+    #     if ifcunit in unit_mapping:
+    #         quantity = 1 * unit_mapping[ifcunit]
+    #         ifcmeter = quantity.to(ureg.meter).magnitude
+    #     else:
+    #         ifcmeter = None
+    # except:
+    #     ifcmeter = None
+    try: 
+        quantity = unitmapper(crsunit)
+        crsmeter = quantity.to(ureg.meter).magnitude
     except:
         crsmeter = None
+
+    # try:
+    #     if crsunit in unit_mapping:
+    #         quantity = 1 * unit_mapping[crsunit]
+    #         crsmeter = quantity.to(ureg.meter).magnitude
+    #     else:
+    #         crsmeter = None
+    # except:
+    #     crsmeter = None
 
     if crsmeter is not None and ifcmeter is not None:
         coeff= crsmeter/ifcmeter
@@ -194,6 +177,37 @@ def infoExt(filename , epsgCode):
         session['Latitude'] = x0
 
     return message
+
+def unitmapper(value):
+    ureg = pint.UnitRegistry()
+    unit_mapping = {
+    "METRE": ureg.meter,
+    "METER": ureg.meter,
+    "CENTIMETRE": ureg.centimeter,
+    "CENTIMETER": ureg.centimeter,
+    "MILLIMETRE": ureg.millimeter,
+    "MILLIMETER": ureg.millimeter,
+    "INCH": ureg.inch,
+    "FOOT": ureg.foot,
+    "YARD": ureg.yard,
+    "MILE": ureg.mile,
+    "NAUTICAL_MILE": ureg.nautical_mile,
+    "metre": ureg.meter,
+    "meter": ureg.meter,
+    "centimeter": ureg.centimeter,
+    "centimetre": ureg.centimeter,
+    "millimeter": ureg.millimeter,
+    "millimetre": ureg.millimeter,
+    "inch": ureg.inch,
+    "foot": ureg.foot,
+    "yard": ureg.yard,
+    "mile": ureg.mile,
+    "nautical_mile": ureg.nautical_mile,
+    # Add more mappings as needed
+    }
+    if value in unit_mapping:
+            return  1 * unit_mapping[value]
+    return
 
 @app.route('/')
 def index():
@@ -432,6 +446,15 @@ def fileOpener(filename):
 def visualize(filename):
     fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     fn_output = re.sub('\.ifc$','_georeferenced.ifc', fn)
+
+    ifc_units = ifc_file.by_type("IfcUnitAssignment")[0].Units
+    for ifc_unit in ifc_units:
+        if ifc_unit.is_a("IfcSIUnit") and ifc_unit.UnitType == "LENGTHUNIT":
+            if ifc_unit.Prefix is not None:
+                ifcunit = ifc_unit.Prefix + ifc_unit.Name
+            else:
+                ifcunit = ifc_unit.Name
+
     if not os.path.exists(fn_output):
         fn_output = fn
         ifc_file = fileOpener(filename)
@@ -556,12 +579,12 @@ def visualize(filename):
     geo_json_file.write(json.dumps(geo_json_dict, indent=2))
     geo_json_file.close()
     filename = "."+ geo_json_file.name
-    if Refl:
-        Latitude =session.get('Latitude')
-        Longitude =session.get('Longitude')
-    else:
-        Latitude =poly[0][1][0]
-        Longitude =poly[0][0][0]
+    # if Refl:
+    #     Latitude =session.get('Latitude')
+    #     Longitude =session.get('Longitude')
+    # else:
+    Latitude =poly[0][0][1]
+    Longitude =poly[0][0][0]
     return render_template('Viewer.html', filename=filename, Latitude=Latitude, Longitude=Longitude)
 
 @app.route('/download/<filename>', methods=['GET'])
