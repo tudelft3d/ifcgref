@@ -118,7 +118,7 @@ DATA;
 #129= IFCDIMENSIONALEXPONENTS(1,0,0,0,0,0,0);
 #130= IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.);
 #133= IFCPROJECTEDCRS('EPSG:28992','Netherlands, Amersfoort datum, New System','AMERFORT-EP',$,$,$,#130);
-#135= IFCMAPCONVERSION(#120,#133,149626315.91058132,413717684.21662884,0.,1.,6.12303176911189E-17,$);
+#135= IFCMAPCONVERSION(#120,#133,149626.31591058132,413717.68421662884,0.,1.,6.12303176911189E-17,0.001);
 #137= IFCPROJECT('2_ZvelcG11tRIbYc4wxe3h',#38,'',$,$,'','',(#120),#115);
 #148= IFCPOSTALADDRESS($,'Gym',$,$,('Hambakendreef 2A '),$,' ''s-Hertogenbosch',$,'5231 RJ','The Netherlands');
 #150= IFCBUILDING('2_ZvelcG11tRIbYc4wxe3g',#48,'Hambakendreef 2a - Gymzaal Hambakendreef',$,$,#33,$,'Hambakendreef 2a - Gymzaal Hambakendreef',.ELEMENT.,$,$,#148);

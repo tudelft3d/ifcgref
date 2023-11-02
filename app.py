@@ -146,7 +146,7 @@ def infoExt(filename , epsgCode):
     #     crsmeter = None
 
     if crsmeter is not None and ifcmeter is not None:
-        coeff= crsmeter/ifcmeter
+        coeff= ifcmeter/crsmeter
     else:
         message += "measurement error"
         return message
@@ -170,11 +170,12 @@ def infoExt(filename , epsgCode):
         x1,y1,z1 = transformer.transform(x0,y0,RElev)
         x2= x1*coeff
         y2= y1*coeff
-        session['x2'] = x2
-        session['y2'] = y2
+        session['xt'] = x1
+        session['yt'] = y1
         session['z1'] = z1
         session['Longitude'] = y0
         session['Latitude'] = x0
+        session['coeff'] = coeff
 
     return message
 
@@ -293,8 +294,8 @@ def survey_points(filename, message):
 
 def local_trans(filename):
     ifc_file = fileOpener(filename)
-    x2 = session.get('x2')
-    y2 = session.get('y2')
+    xt = session.get('xt')
+    yt = session.get('yt')
     z1 = session.get('z1')
     bx,by,bz = 0,0,0
     message = ""
@@ -313,7 +314,7 @@ def local_trans(filename):
     session['by'] = by        
     session['bz'] = bz        
 
-    message += "\nFirst point Target coordinates:" + "(" + str(x2) + ", " + str(y2) + ", " + str(z1) + ")"
+    message += "\nFirst point Target coordinates:" + "(" + str(xt) + ", " + str(yt) + ", " + str(z1) + ")"
     message += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is not scaled and rotation is derived from TrueNorth direction.\n'
 
     ifc_file = ifc_file.end_transaction()
@@ -323,21 +324,22 @@ def local_trans(filename):
 def calculate(filename):
     #if request.method == 'POST':
         # Access the form data by iterating through the rows
+        coeff = session.get('coeff')
         rows = session.get('rows')
         fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         ifc_file = fileOpener(filename)
         data_points = []
         Refl = session.get('Refl')
         if Refl:
-            x2 = session.get('x2')
-            y2 = session.get('y2')
+            xt = session.get('xt')
+            yt = session.get('yt')
             bx = session.get('bx')
             by = session.get('by')
-            data_points.append({"X": bx, "Y": by, "X_prime": x2, "Y_prime": y2})
+            data_points.append({"X": bx, "Y": by, "X_prime": xt, "Y_prime": yt})
         #seperater
         if not Refl and rows == 1:
             Rotation_solution = 0
-            S_solution = 1
+            S_solution = coeff
             if hasattr(ifc_file.by_type("IfcGeometricRepresentationContext")[0], "TrueNorth") and ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth.is_a("IfcDirection"):
                 xord , xabs = ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth[0]
                 xord , xabs = round(float(xord),6) , round(float(xabs),6)
@@ -346,13 +348,13 @@ def calculate(filename):
             Rotation_solution = math.atan2(xord,xabs)
             A = math.cos(Rotation_solution)
             B = math.sin(Rotation_solution)
-            E_solution = float(request.form[f'x_prime{0}']) - (A*float(request.form[f'x{0}'])) + (B*float(request.form[f'y{0}']))
-            N_solution = float(request.form[f'y_prime{0}']) - (B*float(request.form[f'x{0}'])) - (A*float(request.form[f'y{0}']))
+            E_solution = float(request.form[f'x_prime{0}']) - (A*float(request.form[f'x{0}'])*coeff) + (B*float(request.form[f'y{0}'])*coeff)
+            N_solution = float(request.form[f'y_prime{0}']) - (B*float(request.form[f'x{0}'])*coeff) - (A*float(request.form[f'y{0}'])*coeff)
         #seperater
         else:
             if rows == 0:
                 Rotation_solution = 0
-                S_solution = 1
+                S_solution = coeff
                 if hasattr(ifc_file.by_type("IfcGeometricRepresentationContext")[0], "TrueNorth") and ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth.is_a("IfcDirection"):
                     xord , xabs = ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth[0]
                     xord , xabs = round(float(xord),6) , round(float(xabs),6)
@@ -361,8 +363,8 @@ def calculate(filename):
                 Rotation_solution = math.atan2(xord,xabs)
                 A = math.cos(Rotation_solution)
                 B = math.sin(Rotation_solution)
-                E_solution = x2 - (A*bx) + (B*by)
-                N_solution = y2 - (B*bx) - (A*by)
+                E_solution = xt - (A*S_solution*bx) + (B*S_solution*by)
+                N_solution = yt - (B*S_solution*bx) - (A*S_solution*by)
             else:
                 for row in range(rows):
                     x = request.form[f'x{row}']
@@ -403,9 +405,9 @@ def calculate(filename):
                         return eqs
                     # Initial guess for variables [S, Rotation, E, N]
                 if Refl:
-                    initial_guess = [1, 0, x2, y2]
+                    initial_guess = [coeff, 0, xt, yt]
                 else:
-                    initial_guess = [1,0,0,0]
+                    initial_guess = [coeff,0,0,0]
 
                 # Perform the least squares optimization for all data points
                 result, _ = leastsq(equations, initial_guess, args=(data_points,))
