@@ -442,6 +442,9 @@ def visualize(filename):
         if RLat is not None or RLon is not None:
             x0= (float(RLat[0]) + float(RLat[1])/60 + float(RLat[2]+RLat[3]/1000000)/(60*60))
             y0= (float(RLon[0]) + float(RLon[1])/60 + float(RLon[2]+RLon[3]/1000000)/(60*60))
+            session['Longitude'] = y0
+            session['Latitude'] = x0
+
             session['Refl'] = True
         else:
             session['Refl'] = False
@@ -452,9 +455,15 @@ def visualize(filename):
     E = IfcMapConversion.Eastings
     N = IfcMapConversion.Northings
     S = IfcMapConversion.Scale
+    if S is None:
+        S = 1
     ortz = IfcMapConversion.OrthogonalHeight
     cos = IfcMapConversion.XAxisAbscissa
+    if cos is None:
+        cos = 1    
     sin = IfcMapConversion.XAxisOrdinate
+    if sin is None:
+        sin = 0    
     target_epsg = "EPSG:"+str(session.get('target_epsg'))
     transformer2 = Transformer.from_crs(target_epsg,"EPSG:4326")
     #create JSON file
@@ -525,8 +534,10 @@ def visualize(filename):
                                 pg.append(vert)
                         pg.append(pg[0])
                         poly.append(pg)
-
-    polygon = Polygon(poly[0],holes = [poly[1]])
+    if len(poly) == 1:
+            polygon = Polygon(poly[0])
+    else:
+        polygon = Polygon(poly[0],holes = [poly[1]])
     geo_json_dict = {
         "type": "FeatureCollection",
         "features": []
