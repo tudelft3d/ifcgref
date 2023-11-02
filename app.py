@@ -447,6 +447,7 @@ def visualize(filename):
     fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     fn_output = re.sub('\.ifc$','_georeferenced.ifc', fn)
 
+    ifc_file = fileOpener(filename)
     ifc_units = ifc_file.by_type("IfcUnitAssignment")[0].Units
     for ifc_unit in ifc_units:
         if ifc_unit.is_a("IfcSIUnit") and ifc_unit.UnitType == "LENGTHUNIT":
@@ -454,6 +455,10 @@ def visualize(filename):
                 ifcunit = ifc_unit.Prefix + ifc_unit.Name
             else:
                 ifcunit = ifc_unit.Name
+
+    ureg = pint.UnitRegistry()
+    quantity= unitmapper(ifcunit)
+    mag = (quantity.to(ureg.meter).magnitude)*1000
 
     if not os.path.exists(fn_output):
         fn_output = fn
@@ -548,7 +553,7 @@ def visualize(filename):
                         for coordinate_id in b:
                             if 0 <= coordinate_id < len(coordinates):
                                 x,y,z = coordinates[coordinate_id]
-                                po = (x/1000),(y/1000),(z/1000)
+                                po = (x/mag),(y/mag),(z/mag)
                                 xx = S * cos * po[0] - S * sin * po[1] + E
                                 yy = S * sin * po[0] + S * cos * po[1] + N
                                 zz = po[2] + ortz
