@@ -482,6 +482,7 @@ def visualize(filename):
     Refl = session.get('Refl')
     ifc_file = ifcopenshell.open(fn_output)
     IfcMapConversion, IfcProjectedCRS = georeference_ifc.get_mapconversion_crs(ifc_file=ifc_file)
+    target = IfcProjectedCRS.Name.split(':')
     E = IfcMapConversion.Eastings
     N = IfcMapConversion.Northings
     S = IfcMapConversion.Scale
@@ -494,7 +495,9 @@ def visualize(filename):
     sin = IfcMapConversion.XAxisOrdinate
     if sin is None:
         sin = 0    
-    target_epsg = "EPSG:"+str(session.get('target_epsg'))
+    #target_epsg = "EPSG:"+str(session.get('target_epsg'))
+    target_epsg = "EPSG:"+ target[1]
+
     transformer2 = Transformer.from_crs(target_epsg,"EPSG:4326")
     #create JSON file
     json_dict = {
@@ -519,7 +522,7 @@ def visualize(filename):
     json_file.close()
 
     # Construct the full file paths relative to the current working directory
-    path1 = os.path.join(os.getcwd(), 'envelop','Env.exe')
+    path1 = os.path.join(os.getcwd(), 'envelop','Env02.exe')
     path2 = os.path.join(os.getcwd(), 'envelop', fnjson)
     result = subprocess.Popen([path1 , path2],    stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL)

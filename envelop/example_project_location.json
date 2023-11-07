@@ -1,0 +1,18 @@
+{
+  "Filepaths": {
+    "Input": [
+      "./uploads/example_project_location.ifc"
+    ],
+    "Output": "./envelop/"
+  },
+  "voxelSize": {
+    "xy": 1,
+    "z": 1
+  },
+  "Footprint elevation": 0.15,
+  "Output report": 1,
+  "LoD output": [
+    0.2
+  ],
+  "Ignore Proxy": 1
+}
