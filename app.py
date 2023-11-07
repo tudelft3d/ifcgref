@@ -534,7 +534,7 @@ def visualize(filename):
 
     # Extract the CityObjects dictionary
     city_objects = data.get("CityObjects", {})
-    poly = []
+    gpoly = []
     # Iterate through the CityObjects
     for object_id, city_object in city_objects.items():
         attributes = city_object.get("attributes", {})
@@ -546,10 +546,11 @@ def visualize(filename):
             semantics = geom.get("semantics", {})
             surfaces = semantics.get("surfaces", [])
 
-            if any(surface.get("type") == "RoofSurface" for surface in surfaces):
+            if any(surface.get("type") == "GroundSurface" for surface in surfaces):
                 print(f"Object ID: {object_id}")
                 print(f"Coordinates of RoofSurface:")
                 for boundary in geom.get("boundaries", []):
+                    poly = []
                     for b in boundary:
                         pg = []
                         for coordinate_id in b:
@@ -564,23 +565,23 @@ def visualize(filename):
                                 pg.append(vert)
                         pg.append(pg[0])
                         poly.append(pg)
-    if len(poly) == 1:
-            polygon = Polygon(poly[0])
-    else:
-        polygon = Polygon(poly[0],holes = [poly[1]])
+                    gpoly.append(poly)
+
     geo_json_dict = {
         "type": "FeatureCollection",
         "features": []
         }
-    
-
-    feature = {
-        'type': 'Feature',
-        'properties': {},
-        'geometry': mapping(polygon)
-    }
-
-    geo_json_dict["features"].append(feature)
+    for pol in gpoly:
+        if len(pol) == 1:
+                polygon = Polygon(pol[0])
+        else:
+            polygon = Polygon(pol[0],holes = [pol[1]])
+        feature = {
+            'type': 'Feature',
+            'properties': {},
+            'geometry': mapping(polygon)
+        }
+        geo_json_dict["features"].append(feature)
     fn_ = re.sub('\.ifc$','.geojson', filename)
     geo_json_file = open(os.path.join('./static/', fn_), 'w+')
     geo_json_file.write(json.dumps(geo_json_dict, indent=2))
@@ -590,8 +591,8 @@ def visualize(filename):
     #     Latitude =session.get('Latitude')
     #     Longitude =session.get('Longitude')
     # else:
-    Latitude =poly[0][0][1]
-    Longitude =poly[0][0][0]
+    Latitude =gpoly[0][0][0][1]
+    Longitude =gpoly[0][0][0][0]
     return render_template('Viewer.html', filename=filename, Latitude=Latitude, Longitude=Longitude)
 
 @app.route('/download/<filename>', methods=['GET'])
