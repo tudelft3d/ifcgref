@@ -546,7 +546,7 @@ def visualize(filename):
             semantics = geom.get("semantics", {})
             surfaces = semantics.get("surfaces", [])
 
-            if any(surface.get("type") == "GroundSurface" for surface in surfaces):
+            if any(surface.get("type") == "RoofSurface" for surface in surfaces):
                 print(f"Object ID: {object_id}")
                 print(f"Coordinates of RoofSurface:")
                 for boundary in geom.get("boundaries", []):
