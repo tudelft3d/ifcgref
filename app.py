@@ -38,7 +38,7 @@ def georef(filename):
     mapconversion = None
     crs = None
 
-    if ifc_file.schema == 'IFC4' or ifc_file.schema == 'IFC4X3_ADD1':
+    if ifc_file.schema == 'IFC4' or ifc_file.schema == 'IFC4X3_ADD1' or ifc_file.schema == 'IFC4X3':
         project = ifc_file.by_type("IfcProject")[0]
         for c in (m for c in project.RepresentationContexts for m in c.HasCoordinateOperation):
             mapconversion = c
@@ -72,7 +72,7 @@ def infoExt(filename , epsgCode):
 
     mapconversion = None
     crs = None
-    if ifc_file.schema != 'IFC4':
+    if ifc_file.schema != 'IFC4' and ifc_file.schema != 'IFC4X3':
         message += "Only IFC4 is supported.\n"
         return message
 
@@ -165,7 +165,7 @@ def infoExt(filename , epsgCode):
         return message
     message += f"coeff: {coeff}\n"
     message += "______"
-
+    session['coeff'] = coeff
     if Refl:
         x1,y1,z1 = transformer.transform(x0,y0,RElev)
         x2= x1*coeff
@@ -175,7 +175,7 @@ def infoExt(filename , epsgCode):
         session['z1'] = z1
         session['Longitude'] = y0
         session['Latitude'] = x0
-        session['coeff'] = coeff
+
 
     return message
 
@@ -350,6 +350,9 @@ def calculate(filename):
             B = math.sin(Rotation_solution)
             E_solution = float(request.form[f'x_prime{0}']) - (A*float(request.form[f'x{0}'])*coeff) + (B*float(request.form[f'y{0}'])*coeff)
             N_solution = float(request.form[f'y_prime{0}']) - (B*float(request.form[f'x{0}'])*coeff) - (A*float(request.form[f'y{0}'])*coeff)
+            session['z1'] = float(request.form[f'z_prime{0}'])
+            session['bz'] = float(request.form[f'z{0}'])
+
         #seperater
         else:
             if rows == 0:
@@ -596,7 +599,7 @@ def visualize(filename):
     # else:
     Latitude =gpoly[0][0][0][1]
     Longitude =gpoly[0][0][0][0]
-    return render_template('Viewer.html', filename=filename, Latitude=Latitude, Longitude=Longitude)
+    return render_template('view.html', filename=filename, Latitude=Latitude, Longitude=Longitude)
 
 @app.route('/download/<filename>', methods=['GET'])
 def download(filename):
