@@ -55,7 +55,7 @@ def set_mapconversion_crs(ifc_file: ifcopenshell.file,
         system into the units of the target CRS (often expressed in metres).
         If omitted, a value of 1.0 is assumed.
     """
-    if ifc_file.schema == 'IFC4' or ifc_file.schema == 'IFC4X3_ADD1':
+    if ifc_file.schema == 'IFC4' or ifc_file.schema == 'IFC4X3_ADD1' or ifc_file.schema == 'IFC4X3':
         set_mapconversion_crs_ifc4(ifc_file, target_crs_epsg_code, eastings, northings, orthogonal_height,
                                    x_axis_abscissa,
                                    x_axis_ordinate, scale)
@@ -147,7 +147,7 @@ def get_mapconversion_crs(ifc_file: ifcopenshell.file) -> (object, object):
     mapconversion = None
     crs = None
 
-    if ifc_file.schema == 'IFC4' or ifc_file.schema == 'IFC4X3_ADD1':
+    if ifc_file.schema == 'IFC4' or ifc_file.schema == 'IFC4X3_ADD1' or ifc_file.schema == 'IFC4X3':
         project = ifc_file.by_type("IfcProject")[0]
         for c in (m for c in project.RepresentationContexts for m in c.HasCoordinateOperation):
             return c, c.TargetCRS
