@@ -28,9 +28,8 @@ ALLOWED_EXTENSIONS = {'ifc'}  # Define allowed file extensions as a set
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def georef(filename):
+def georef(ifc_file):
     geo = False
-    ifc_file = fileOpener(filename)
     #check ifc version
     version = ifc_file.schema
     message = f"IFC version: {version}\n"
@@ -224,9 +223,10 @@ def upload_file():
     if file and allowed_file(file.filename):  # Check if the file extension is allowed
         filename = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        message, geo = georef(filename)
-        if geo == True:
-            ifc_file = fileOpener(filename)
+        ifc_file = fileOpener(filename)
+
+        message, geo = georef(ifc_file)
+        if geo:
             IfcMapConversion, IfcProjectedCRS = georeference_ifc.get_mapconversion_crs(ifc_file=ifc_file)
             df = pd.DataFrame(list(IfcProjectedCRS.__dict__.items()), columns= ['property', 'value'])
             dg = pd.DataFrame(list(IfcMapConversion.__dict__.items()), columns= ['property', 'value'])
@@ -442,6 +442,17 @@ def fileOpener(filename):
     print("Opening IFC file:", fn)  # Add this line for debugging
     try:
         ifc_file = ifcopenshell.open(fn)
+        # ifc_schema = ifc_file.schema
+        # ifc_site = ifc_file.by_type("IfcSite")[0]
+        # ifc_unit = ifc_file.by_type("IfcUnitAssignment")[0].Units
+        # ifc_geom = ifc_file.by_type("IfcGeometricRepresentationContext")[0]
+        # ifc_mapconv, ifc_projcrs = georeference_ifc.get_mapconversion_crs(ifc_file=ifc_file)
+        # session['ifc_schema'] = ifc_schema
+        # session['ifc_site'] = pickle.dumps(ifc_site.ObjectPlacement)
+        # # session['ifc_unit'] = ifc_unit
+        # # session['ifc_geom'] = ifc_geom
+        # # session['ifc_mapconv'] = ifc_mapconv
+        # # session['ifc_projcrs'] = ifc_projcrs
         return ifc_file
     except Exception as e:
         print("Error opening IFC file:", str(e))  # Add this line for debugging
