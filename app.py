@@ -277,7 +277,7 @@ def survey_points(filename, message):
         return render_template('survey.html', filename=filename, message=message, Num=Num)
     else:
         message += '\nThe IFC model has no surveyed or georeferenced attribute.\nYou need to provide at least one point in local and projected CRS.'
-        message += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is not scaled and rotation is derived from TrueNorth direction.\n'
+        message += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is scaled based on unit conversion and rotation is derived from TrueNorth direction.\n'
         Num = []
         if request.method == 'POST':
             try:
@@ -315,7 +315,7 @@ def local_trans(filename):
     session['bz'] = bz        
 
     message += "\nFirst point Target coordinates:" + "(" + str(xt) + ", " + str(yt) + ", " + str(z1) + ")"
-    message += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is not scaled and rotation is derived from TrueNorth direction.\n'
+    message += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is scaled based on unit conversion and rotation is derived from TrueNorth direction.\n'
 
     ifc_file = ifc_file.end_transaction()
     return message
