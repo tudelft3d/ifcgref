@@ -424,7 +424,7 @@ def calculate(filename):
                                         target_crs_epsg_code=target_epsg,
                                         eastings=E_solution,
                                         northings=N_solution,
-                                        orthogonal_height=(session.get('z1')-session.get('bz')),
+                                        orthogonal_height=(session.get('z1')-(session.get('bz')*S_solution)),
                                         x_axis_abscissa=math.cos(Rotation_solution),
                                         x_axis_ordinate=math.sin(Rotation_solution),
                                         scale=S_solution)
