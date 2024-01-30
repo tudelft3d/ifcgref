@@ -511,35 +511,34 @@ def visualize(filename):
         sin = 0    
     #target_epsg = "EPSG:"+str(session.get('target_epsg'))
     target_epsg = "EPSG:"+ target[1]
-
+    fnjson = re.sub('\.ifc$','.json', filename)
     transformer2 = Transformer.from_crs(target_epsg,"EPSG:4326")
     #create JSON file
     json_dict = {
     "Filepaths": {
         "Input" : ['./uploads/'+filename],
-        "Output" : "./envelop/"
+        "Output" : ['./envelop/'+fnjson]
     },
     "voxelSize" : {
         "xy" : 1,
         "z" : 1
     },
-    "Footprint elevation" : 0.15,
+    "Generate footprint": 0,
     "Output report" : 1,
     "LoD output" : [0.2],
     "Ignore Proxy" : 1
     }
 
 
-    fnjson = re.sub('\.ifc$','.json', filename)
+    
     json_file = open(os.path.join('envelop', fnjson), 'w+')
     json_file.write(json.dumps(json_dict, indent=2))
     json_file.close()
 
     # Construct the full file paths relative to the current working directory
-    path1 = os.path.join(os.getcwd(), 'envelop','Env02.exe')
+    path1 = os.path.join(os.getcwd(), 'envelop','Env04.exe')
     path2 = os.path.join(os.getcwd(), 'envelop', fnjson)
-    result = subprocess.Popen([path1 , path2],    stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL)
+    result = subprocess.Popen([path1 , path2])
     while result.poll() is None:    time.sleep(0.5)
     if result.returncode == 0:
         print("\r", "Success")
