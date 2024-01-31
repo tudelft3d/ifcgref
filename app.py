@@ -512,21 +512,24 @@ def visualize(filename):
     #target_epsg = "EPSG:"+str(session.get('target_epsg'))
     target_epsg = "EPSG:"+ target[1]
     fnjson = re.sub('\.ifc$','.json', filename)
+    fncityjson = re.sub('\.ifc$','.city.json', filename)
     transformer2 = Transformer.from_crs(target_epsg,"EPSG:4326")
+    path0 = repr(os.path.join(os.getcwd(), 'envelop', fncityjson)).replace("\\\\","/").strip("'")
+    path00 = os.path.join(os.getcwd(), 'uploads', filename).replace("\\\\","/").strip("'")
     #create JSON file
     json_dict = {
     "Filepaths": {
         "Input" : ['./uploads/'+filename],
-        "Output" : ['./envelop/'+fnjson]
+        "Output" : path0
     },
     "voxelSize" : {
         "xy" : 1,
         "z" : 1
     },
     "Generate footprint": 0,
+    "Generate roof outline": 1,
     "Output report" : 1,
-    "LoD output" : [0.2],
-    "Ignore Proxy" : 1
+    "LoD output" : [0.2]
     }
 
 
@@ -544,8 +547,8 @@ def visualize(filename):
         print("\r", "Success")
 
     # Load the JSON data from the file
-    fncjson = re.sub('\.json$','.city.json', fnjson)
-    with open(os.path.join('envelop', fncjson), 'r') as cityjson_file:
+    # fncjson = re.sub('\.json$','.city.json', fnjson)
+    with open(os.path.join('envelop', fncityjson), 'r') as cityjson_file:
         data = json.load(cityjson_file)
 
     # Extract the CityObjects dictionary
