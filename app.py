@@ -237,7 +237,31 @@ def upload_file():
         return redirect(url_for('convert_crs', filename=filename))  # Redirect to EPSG code input page
     else:
         return render_template('upload.html', error_message="Invalid file format. Please upload a .ifc file.")
-    
+
+@app.route('/devs', methods=['GET', 'POST'])
+def devs_upload():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return "No file part"
+
+        file = request.files['file']
+
+        if file.filename == '':
+            return "No selected file"
+
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            ifc_file = fileOpener(filename)
+
+            # Check if the IFC file is georeferenced
+            message, geo = georef(ifc_file)
+
+            if geo:
+                return f"The file {filename} is georeferenced.\n{message}"
+            else:
+                return f"The file {filename} is not georeferenced.\n{message}"
+                
 @app.route('/convert/<filename>', methods=['GET', 'POST'])
 def convert_crs(filename):
     if request.method == 'POST':
@@ -515,7 +539,6 @@ def visualize(filename):
     fncityjson = re.sub('\.ifc$','.city.json', filename)
     transformer2 = Transformer.from_crs(target_epsg,"EPSG:4326")
     path0 = repr(os.path.join(os.getcwd(), 'envelop', fncityjson)).replace("\\\\","/").strip("'")
-    path00 = os.path.join(os.getcwd(), 'uploads', filename).replace("\\\\","/").strip("'")
     #create JSON file
     json_dict = {
     "Filepaths": {
