@@ -6,6 +6,8 @@ import ifcopenshell.util.element
 import ifcopenshell.util.pset
 from ifcopenshell.util.element import get_psets
 import math
+from collections import OrderedDict
+
 
 
 def set_mapconversion_crs(ifc_file: ifcopenshell.file,
@@ -119,7 +121,8 @@ def set_mapconversion_crs_ifc2x3(ifc_file: ifcopenshell.file,
 
     site = ifc_file.by_type("IfcSite")[0]  # we assume that the IfcProject only has one IfcSite entity.
     pset0 = ifcopenshell.api.run("pset.add_pset", ifc_file, product=site, name="ePSet_MapConversion")
-    ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset0, properties={'Eastings': eastings,
+    ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset0, properties={'TargetCRS':target_crs_epsg_code,
+                                                                            'Eastings': eastings,
                                                                             'Northings': northings,
                                                                             'OrthogonalHeight': orthogonal_height,
                                                                             'XAxisAbscissa': x_axis_abscissa,
@@ -130,17 +133,7 @@ def set_mapconversion_crs_ifc2x3(ifc_file: ifcopenshell.file,
     ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset1, properties={'Name': target_crs_epsg_code},
                          pset_template=crs_template)
 
-
-
 def get_mapconversion_crs(ifc_file: ifcopenshell.file) -> (object, object):
-    """
-    This method returns a tuple (IfcMapConversion, IfcProjectedCRS) from an IfcOpenShell file object.
-
-        :param ifc_file: ifcopenshell.file
-            the IfcOpenShell file object from which georeference information is read.
-        :returns a tuple of two objects IfcMapConversion, IfcProjectedCRS.
-    """
-
     class Struct:
         def __init__(self, **entries):
             self.__dict__.update(entries)
@@ -156,9 +149,11 @@ def get_mapconversion_crs(ifc_file: ifcopenshell.file) -> (object, object):
         site = ifc_file.by_type("IfcSite")[0]
         psets = get_psets(site)
         if 'ePSet_MapConversion' in psets.keys() and 'ePSet_ProjectedCRS' in psets.keys():
-            return Struct(**psets['ePSet_MapConversion']), Struct(**psets['ePSet_ProjectedCRS'])
+            # Move the last property to the first place
+            mapconversion_properties = OrderedDict(list(psets['ePSet_MapConversion'].items())[-1:] + list(psets['ePSet_MapConversion'].items())[:-1])
+            crs_properties = OrderedDict(list(psets['ePSet_ProjectedCRS'].items())[-1:] + list(psets['ePSet_ProjectedCRS'].items())[:-1])
+            return Struct(**mapconversion_properties), Struct(**crs_properties)
     return mapconversion, crs
-
 
 def get_rotation(mapconversion) -> float:
     """
