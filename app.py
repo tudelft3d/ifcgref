@@ -267,7 +267,7 @@ def devs_upload():
                 message += "IfcMapconversion:\n\n" + dg.to_string()
                 return f"Filename: {filename}\nGeoreferenced: YES\n{message}"
             else:
-                message += "For georeferencing the IFC file, please visit the following address in a web browser:\n https//ifcgref.bk.tudelft.nl"
+                message += "For georeferencing the IFC file, please visit the following address in a web browser:\nhttps://ifcgref.bk.tudelft.nl"
                 return f"Filename: {filename}\nGeoreferenced: NO\n{message}"
                 
 @app.route('/convert/<filename>', methods=['GET', 'POST'])
