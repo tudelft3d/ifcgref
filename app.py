@@ -37,12 +37,18 @@ def georef(ifc_file):
     mapconversion = None
     crs = None
 
-    if ifc_file.schema == 'IFC4' or ifc_file.schema == 'IFC4X3_ADD1' or ifc_file.schema == 'IFC4X3':
+    if ifc_file.schema[:4] == 'IFC4':
         project = ifc_file.by_type("IfcProject")[0]
         for c in (m for c in project.RepresentationContexts for m in c.HasCoordinateOperation):
             mapconversion = c
             crs = c.TargetCRS
         if mapconversion is not None:
+            message += "IFC file is georeferenced.\n"
+            geo = True
+    if ifc_file.schema == 'IFC2X3':
+        site = ifc_file.by_type("IfcSite")[0]
+        psets = ifcopenshell.util.element.get_psets(site)
+        if 'ePSet_MapConversion' in psets.keys() and 'ePSet_ProjectedCRS' in psets.keys():
             message += "IFC file is georeferenced.\n"
             geo = True
     return message , geo
@@ -68,11 +74,9 @@ def infoExt(filename , epsgCode):
         session['Refl'] = False
         message += "RefLatitude or RefLongitude not available in the IFC file.\n"
     Refl = session.get('Refl')
-
-    mapconversion = None
     crs = None
-    if ifc_file.schema != 'IFC4' and ifc_file.schema != 'IFC4X3':
-        message += "Only IFC4 is supported.\n"
+    if ifc_file.schema[:4] != 'IFC4' and ifc_file.schema != 'IFC2X3':
+        message += "IFC2X3, IFC4, and newer are supported.\n"
         return message
 
     bx,by,bz = 0,0,0
@@ -153,7 +157,7 @@ def infoExt(filename , epsgCode):
         message += f"Longitude: {round(y0,4)}\n"
         message += f"Latitude: {round(x0,4)}\n"
         message += f"Reference Elevation: {RElev}\n"
-    message += f"CRS Unit: {crsunit}\n"
+    message += f"Target CRS Unit: {crsunit}\n"
 
     if ifcunit:
         unit_name = ifcunit
@@ -258,9 +262,13 @@ def devs_upload():
             message, geo = georef(ifc_file)
 
             if geo:
-                return f"The file {filename} is georeferenced.\n{message}"
+                IfcMapConversion, IfcProjectedCRS = georeference_ifc.get_mapconversion_crs(ifc_file=ifc_file)
+                dg = pd.DataFrame(list(IfcMapConversion.__dict__.items()), columns= ['property', 'value'])
+                message += "IfcMapconversion:\n\n" + dg.to_string()
+                return f"Filename: {filename}\nGeoreferenced: YES\n{message}"
             else:
-                return f"The file {filename} is not georeferenced.\n{message}"
+                message += "For georeferencing the IFC file, please visit the following address in a web browser:\n https//ifcgref.bk.tudelft.nl"
+                return f"Filename: {filename}\nGeoreferenced: NO\n{message}"
                 
 @app.route('/convert/<filename>', methods=['GET', 'POST'])
 def convert_crs(filename):
@@ -457,6 +465,7 @@ def calculate(filename):
         IfcMapConversion, IfcProjectedCRS = georeference_ifc.get_mapconversion_crs(ifc_file=ifc_file)
         df = pd.DataFrame(list(IfcProjectedCRS.__dict__.items()), columns= ['property', 'value'])
         dg = pd.DataFrame(list(IfcMapConversion.__dict__.items()), columns= ['property', 'value'])
+        dg['value'] = dg['value'].astype(str)
         html_table_f = df.to_html()
         html_table_g = dg.to_html()
         return render_template('result.html', filename=filename, table_f=html_table_f, table_g=html_table_g)

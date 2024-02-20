@@ -55,7 +55,7 @@ def set_mapconversion_crs(ifc_file: ifcopenshell.file,
         system into the units of the target CRS (often expressed in metres).
         If omitted, a value of 1.0 is assumed.
     """
-    if ifc_file.schema == 'IFC4' or ifc_file.schema == 'IFC4X3_ADD1' or ifc_file.schema == 'IFC4X3':
+    if ifc_file.schema[:4] == 'IFC4':
         set_mapconversion_crs_ifc4(ifc_file, target_crs_epsg_code, eastings, northings, orthogonal_height,
                                    x_axis_abscissa,
                                    x_axis_ordinate, scale)
@@ -115,20 +115,21 @@ def set_mapconversion_crs_ifc2x3(ifc_file: ifcopenshell.file,
     ifc_template = ifcopenshell.open(os.path.join(os.path.dirname(__file__), './IFC2X3_Geolocation.ifc'))
     map_conversion_template = \
         [t for t in ifc_template.by_type('IfcPropertySetTemplate') if t.Name == 'EPset_MapConversion'][0]
-    crs_template = [t for t in ifc_template.by_type('IfcPropertySetTemplate') if t.Name == 'EPset_MapConversion'][0]
+    crs_template = [t for t in ifc_template.by_type('IfcPropertySetTemplate') if t.Name == 'EPset_ProjectedCRS'][0]
 
     site = ifc_file.by_type("IfcSite")[0]  # we assume that the IfcProject only has one IfcSite entity.
-    pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=site, name="ePSet_MapConversion")
-    ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={'Eastings': eastings,
+    pset0 = ifcopenshell.api.run("pset.add_pset", ifc_file, product=site, name="ePSet_MapConversion")
+    ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset0, properties={'Eastings': eastings,
                                                                             'Northings': northings,
                                                                             'OrthogonalHeight': orthogonal_height,
                                                                             'XAxisAbscissa': x_axis_abscissa,
                                                                             'XAxisOrdinate': x_axis_ordinate,
                                                                             'Scale': scale},
                          pset_template=map_conversion_template)
-    pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=site, name="ePSet_ProjectedCRS")
-    ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={'Name': target_crs_epsg_code},
+    pset1 = ifcopenshell.api.run("pset.add_pset", ifc_file, product=site, name="ePSet_ProjectedCRS")
+    ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset1, properties={'Name': target_crs_epsg_code},
                          pset_template=crs_template)
+
 
 
 def get_mapconversion_crs(ifc_file: ifcopenshell.file) -> (object, object):
@@ -147,7 +148,7 @@ def get_mapconversion_crs(ifc_file: ifcopenshell.file) -> (object, object):
     mapconversion = None
     crs = None
 
-    if ifc_file.schema == 'IFC4' or ifc_file.schema == 'IFC4X3_ADD1' or ifc_file.schema == 'IFC4X3':
+    if ifc_file.schema [:4] == 'IFC4':
         project = ifc_file.by_type("IfcProject")[0]
         for c in (m for c in project.RepresentationContexts for m in c.HasCoordinateOperation):
             return c, c.TargetCRS
