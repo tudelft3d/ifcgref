@@ -541,7 +541,10 @@ def visualize(filename):
         cos = 1    
     sin = IfcMapConversion.XAxisOrdinate
     if sin is None:
-        sin = 0    
+        sin = 0
+    Rotation_solution = math.atan2(sin,cos)
+    A = math.cos(Rotation_solution)
+    B = math.sin(Rotation_solution)        
     #target_epsg = "EPSG:"+str(session.get('target_epsg'))
     target_epsg = "EPSG:"+ target[1]
     fnjson = re.sub('\.ifc$','.json', filename)
@@ -608,11 +611,12 @@ def visualize(filename):
                             if 0 <= coordinate_id < len(coordinates):
                                 x,y,z = coordinates[coordinate_id]
                                 po = (x/mag),(y/mag),(z/mag)
-                                xx = S * cos * po[0] - S * sin * po[1] + E
-                                yy = S * sin * po[0] + S * cos * po[1] + N
+                                xx = S * A * po[0] - S * B * po[1] + E
+                                yy = S * B * po[0] + S * A * po[1] + N
                                 zz = po[2] + ortz
                                 x2,y2 = transformer2.transform(xx,yy)
                                 vert = y2,x2
+                                #vert = xx,yy,zz
                                 pg.append(vert)
                         pg.append(pg[0])
                         poly.append(pg)
