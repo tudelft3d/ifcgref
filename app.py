@@ -372,9 +372,9 @@ def calculate(filename):
         if not Refl and rows == 1:
             Rotation_solution = 0
             S_solution = coeff
-            if hasattr(ifc_file.by_type("IfcGeometricRepresentationContext")[0], "TrueNorth") and ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth.is_a("IfcDirection"):
-                xord , xabs = ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth[0]
-                xord , xabs = round(float(xord),6) , round(float(xabs),6)
+            ro = ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth
+            if ro is not None and ro.is_a("IfcDirection"):
+                xord , xabs = round(float(ro[0][0]),6) , round(float(ro[0][1]),6)
             else:
                 xord , xabs = 0 , 1
             Rotation_solution = math.atan2(xord,xabs)
@@ -390,9 +390,9 @@ def calculate(filename):
             if rows == 0:
                 Rotation_solution = 0
                 S_solution = coeff
-                if hasattr(ifc_file.by_type("IfcGeometricRepresentationContext")[0], "TrueNorth") and ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth.is_a("IfcDirection"):
-                    xord , xabs = ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth[0]
-                    xord , xabs = round(float(xord),6) , round(float(xabs),6)
+                ro = ifc_file.by_type("IfcGeometricRepresentationContext")[0].TrueNorth
+                if ro is not None and ro.is_a("IfcDirection"):
+                    xord , xabs = round(float(ro[0][0]),6) , round(float(ro[0][1]),6)
                 else:
                     xord , xabs = 0 , 1
                 Rotation_solution = math.atan2(xord,xabs)
@@ -574,7 +574,12 @@ def visualize(filename):
     json_file.close()
 
     # Construct the full file paths relative to the current working directory
-    path1 = os.path.join(os.getcwd(), 'envelop','Env04.exe')
+    if ifc_file.schema[:4] == 'IFC4':
+        extractor = 'Env04.exe'
+    else:
+        extractor = 'Env02X3.exe'
+    
+    path1 = os.path.join(os.getcwd(), 'envelop', extractor)
     path2 = os.path.join(os.getcwd(), 'envelop', fnjson)
     result = subprocess.Popen([path1 , path2])
     while result.poll() is None:    time.sleep(0.5)
