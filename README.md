@@ -1,8 +1,13 @@
-# Georeferencing IFC Files with Flask
+# IfcGref Web-Based Application
+
+![ifcgref00 (1)](https://github.com/tudelft3d/ifcgref/assets/50393714/378e8d64-378b-485b-aefe-73afe0ecd943)
+
 
 ## Overview
 
-This Flask-based application serves the purpose of georeferencing IFC (Industry Foundation Classes) files, which are commonly used in the context of Building Information Modeling (BIM) data exchange. To accomplish georeferencing, the application leverages the **IFCMapConversion** entity in IFC4, which facilitates the updating of data and the conversion from a local Coordinate Reference System (CRS), often referred to as the engineering coordinate system, into the coordinate reference system of the underlying map (Projected CRS).
+This Flask-based application serves the purpose of georeferencing IFC (Industry Foundation Classes) files, which are commonly used in the context of Building Information Modeling (BIM) data exchange. To accomplish georeferencing, the application leverages the **IFCMapConversion** entity in IFC4, which facilitates the updating of data and the conversion from a local Coordinate Reference System (CRS), often referred to as the engineering coordinate system, into the coordinate reference system of the underlying map (Projected CRS). It's accessible at https://ifcgref.bk.tudelft.nl.
+
+
 
 ## Prerequisites
 
@@ -23,6 +28,25 @@ You can install these dependencies using pip:
 ```bash
 pip install Flask ifcopenshell pyproj pint numpy scipy pandas shapely
 ```
+
+## Supported IFC versions
+
+
+Coordinate operations become accessible starting from IFC 4. For earlier versions like the widely utilized IFC2x3, the utilization of Property sets (Pset) is employed to enable georeferencing. The table below outlines the supported versions: 
+
+| Version | Name |
+| -------- | ------- |
+| 4.3.2.0 | IFC 4.3 ADD2 |
+| 4.2.0.0	| IFC4.2 |
+| 4.1.0.0	| IFC4.1 |
+| 4.0.2.0 | IFC4 ADD2 TC1 |
+| 4.0.2.1 | IFC4 ADD2 |
+| 4.0.2.0	| IFC4 ADD1 |
+| 4.0.0.0 | IFC4 |
+| 2.3.0.1 | IFC2x3 TC1 |
+| 2.3.0.0 | IFC2x3 |
+
+
 ## Usage
 
 1. Clone this repository or download the application files to your local machine.
@@ -47,16 +71,47 @@ This will start the Flask development server.
 - static/: Directory to store static files (e.g., GeoJSON output).
 - templates/: HTML templates for the web interface.
 - uploads/: Directory to temporarily store uploaded IFC files.
+- envelop/: Directory to EnvelopExtractor exe files and temporary store shell produced files.
 
-## Customization
+## Workflow
 
-You can customize the application by modifying the Flask routes, templates, and logic in app.py to suit your specific requirements.
+![Screenshot 2024-02-26 at 17 28 20 (2)](https://github.com/tudelft3d/ifcgref/assets/50393714/3d14b4c7-9652-4b77-bc5b-77bd2a736341)
+
+## HTTP request
+
+For streamlined handling of incoming IFC files by developers, whether they are georeferenced or not, a specialized section called "devs" is available at https://ifcgref.bk.tudelft.nl/devs. Developers can engage with this section by submitting an HTTP request containing the IFC file, and in response, the server provides them with a corresponding response.
+
+Sample of HTTP request from the devs section using a python script:
+
+```bash
+import requests
+
+url = 'https://ifcgref.bk.tudelft.nl/devs'
+file_path = './00.ifc'
+
+
+data = {
+    'file': ('00.ifc', open(file_path, 'rb'))
+}
+
+
+# Make a POST request to the /devs route with the data
+response = requests.post(url, files=data)
+
+# Print the response content
+print(response.text)
+```
+
 
 ## Credits
 
 - This application uses the Flask web framework for the user interface.
 - It leverages the ifcopenshell library for working with IFC files.
 - Georeferencing is performed using pyproj for coordinate transformations.
+- The optimization is performed using SciPy and in particular scipy.optimize.least_squares function.
+- For the vizualization feature IfcEnvelopeExtractor is used for generating the roof-print of the 3D BIM model.
+
+
 
 ## Acknowledgments
 
