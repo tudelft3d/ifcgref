@@ -37,8 +37,6 @@ Coordinate operations become accessible starting from IFC 4. For earlier version
 | Version | Name |
 | -------- | ------- |
 | 4.3.2.0 | IFC 4.3 ADD2 |
-| 4.2.0.0	| IFC4.2 |
-| 4.1.0.0	| IFC4.1 |
 | 4.0.2.0 | IFC4 ADD2 TC1 |
 | 4.0.2.1 | IFC4 ADD2 |
 | 4.0.2.0	| IFC4 ADD1 |
