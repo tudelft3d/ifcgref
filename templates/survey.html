@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>surveyed points</title>
+    <!-- Include jQuery library -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     <h1>Add surveyed points</h1>
@@ -16,8 +18,8 @@
                 <!-- Use Jinja2 to generate the table based on the table_content data -->
                 <table border="1">
                     <tr>
-                        <th colspan="3" style="background-color: darkblue; color: white;">Source CRS (IFC)</th>
-                        <th colspan="3">Target CRS (MAP)</th>
+                        <th colspan="3" style="background-color: darkblue; color: white;">Source CRS (IFC) [{{ ifcunit }}]</th>
+                        <th colspan="3">Target CRS (MAP) [{{ mapunit }}]</th>
                     </tr>
                     <tr>
                         <th style="background-color: darkblue; color: white;">X</th>
@@ -49,5 +51,50 @@
         </form>
     {% endif %}
 
+    <!-- Add script tag for the provided Java+jQuery code -->
+    <script>
+        $(document).ready(function() {
+            $('input').bind('paste', function (e) {
+                var $start = $(this);
+                var source;
+
+                //check for access to clipboard from window or event
+                if (window.clipboardData !== undefined) {
+                    source = window.clipboardData;
+                } else {
+                    source = e.originalEvent.clipboardData;
+                }
+                var data = source.getData("Text");
+                if (data.length > 0) {
+                    if (data.indexOf("\t") > -1) {
+                        var columns = data.split("\n");
+                        $.each(columns, function () {
+                            var values = this.split("\t");
+                            $.each(values, function () {
+                                $start.val(this);
+                                if ($start.closest('td').next('td').find('input,textarea')[0] != undefined || $start.closest('td').next('td').find('textarea')[0] != undefined) {
+                                    $start = $start.closest('td').next('td').find('input,textarea');
+                                }
+                                else {
+                                    return false;
+                                }
+                            });
+                            $start = $start.closest('td').parent().next('tr').children('td:first').find('input,textarea');
+                        });
+                        e.preventDefault();
+                    }
+                }
+            });
+
+            // Enable cell navigation
+            $.fn.enableCellNavigation = function () {
+                // Provided enableCellNavigation function code
+                // ...
+            };
+
+            // Call enableCellNavigation on tables
+            $('table').enableCellNavigation();
+        });
+    </script>
 </body>
 </html>
