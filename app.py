@@ -66,7 +66,7 @@ def infoExt(filename , epsgCode):
     RLat = ifc_site[0].RefLatitude
     RLon = ifc_site[0].RefLongitude
     RElev = ifc_site[0].RefElevation
-    if RLat is not None or RLon is not None:
+    if RLat is not None and RLon is not None:
         x0= (float(RLat[0]) + float(RLat[1])/60 + float(RLat[2]+RLat[3]/1000000)/(60*60))
         y0= (float(RLon[0]) + float(RLon[1])/60 + float(RLon[2]+RLon[3]/1000000)/(60*60))
         session['Refl'] = True
@@ -158,10 +158,13 @@ def infoExt(filename , epsgCode):
         message += f"Latitude: {round(x0,4)}\n"
         message += f"Reference Elevation: {RElev}\n"
     message += f"Target CRS Unit: {crsunit}\n"
+    session['mapunit'] = str.lower(crsunit)
 
     if ifcunit:
         unit_name = ifcunit
         message += f"IFC Unit: {unit_name}\n"
+        session['ifcunit'] = str.lower(unit_name)
+
 
     else:
         message += "No length unit found in the IFC file."
@@ -236,6 +239,15 @@ def upload_file():
             dg = pd.DataFrame(list(IfcMapConversion.__dict__.items()), columns= ['property', 'value'])
             html_table_f = df.to_html()
             html_table_g = dg.to_html()
+            epsgName = IfcMapConversion.TargetCRS.Name
+            epsg = int(epsgName[5:])
+            message2 = infoExt(filename,epsg)
+            coeff = session.get('coeff')
+            if int(coeff)!=1 and IfcMapConversion.Scale is None:
+                message += "We have a problem."
+                return render_template('result.html', filename=filename, table_f=html_table_f, table_g=html_table_g, message=message)
+            if int(coeff)!=1 and int(IfcMapConversion.Scale) == 1:
+                message += "We have a problem."
             return render_template('result.html', filename=filename, table_f=html_table_f, table_g=html_table_g, message=message)
         
         return redirect(url_for('convert_crs', filename=filename))  # Redirect to EPSG code input page
@@ -290,6 +302,8 @@ def convert_crs(filename):
 
 @app.route('/survey/<filename>/<message>', methods=['GET', 'POST'])
 def survey_points(filename, message):
+    ifcunit = session.get('ifcunit')
+    mapunit = session.get('mapunit')
     Refl = session.get('Refl')
     if Refl:
         message += local_trans(filename)
@@ -306,7 +320,7 @@ def survey_points(filename, message):
             session['rows'] = Num
             if Num == 0:
                 return redirect(url_for('calculate', filename=filename))
-        return render_template('survey.html', filename=filename, message=message, Num=Num)
+        return render_template('survey.html', filename=filename, message=message, Num=Num, ifcunit=ifcunit, mapunit=mapunit)
     else:
         message += '\nThe IFC model has no surveyed or georeferenced attribute.\nYou need to provide at least one point in local and projected CRS.'
         message += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is scaled based on unit conversion and rotation is derived from TrueNorth direction.\n'
@@ -321,7 +335,7 @@ def survey_points(filename, message):
                 message += "Please enter a positive integer."
                 return render_template('survey.html', filename=filename, message=message)
             session['rows'] = Num
-        return render_template('survey.html', filename=filename, message=message, Num=Num)
+        return render_template('survey.html', filename=filename, message=message, Num=Num, ifcunit=ifcunit, mapunit=mapunit)
 
 
 def local_trans(filename):
@@ -516,7 +530,7 @@ def visualize(filename):
         RLon = ifc_file.by_type("IfcSite")[0].RefLongitude
         RElev = ifc_file.by_type("IfcSite")[0].RefElevation
 
-        if RLat is not None or RLon is not None:
+        if RLat is not None and RLon is not None:
             x0= (float(RLat[0]) + float(RLat[1])/60 + float(RLat[2]+RLat[3]/1000000)/(60*60))
             y0= (float(RLon[0]) + float(RLon[1])/60 + float(RLon[2]+RLon[3]/1000000)/(60*60))
             session['Longitude'] = y0
@@ -616,9 +630,9 @@ def visualize(filename):
                             if 0 <= coordinate_id < len(coordinates):
                                 x,y,z = coordinates[coordinate_id]
                                 po = (x/mag),(y/mag),(z/mag)
-                                xx = S * A * po[0] - S * B * po[1] + E
-                                yy = S * B * po[0] + S * A * po[1] + N
-                                zz = po[2] + ortz
+                                xx = S * po[0]  + E
+                                yy = S * po[1] + N
+                                zz = S * po[2] + ortz
                                 x2,y2 = transformer2.transform(xx,yy)
                                 vert = y2,x2
                                 #vert = xx,yy,zz
