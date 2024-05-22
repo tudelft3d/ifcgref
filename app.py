@@ -58,7 +58,7 @@ def infoExt(filename , epsgCode):
     ifc_file = fileOpener(filename)
     #check ifc version
     version = ifc_file.schema
-    message = f"IFC version: {version}\n"
+    messages = [('IFC version', version)]
     ifc_site = ifc_file.by_type("IfcSite")
 
 
@@ -72,12 +72,12 @@ def infoExt(filename , epsgCode):
         session['Refl'] = True
     else:
         session['Refl'] = False
-        message += "RefLatitude or RefLongitude not available in the IFC file.\n"
+        messages.append(('RefLatitude or RefLongitude', 'Not available'))
     Refl = session.get('Refl')
     crs = None
     if ifc_file.schema[:4] != 'IFC4' and ifc_file.schema != 'IFC2X3':
-        message += "IFC2X3, IFC4, and newer are supported.\n"
-        return message
+        errorMessage = "IFC2X3, IFC4, and newer versions are supported.\n"
+        return messages, errorMessage
 
     bx,by,bz = 0,0,0
     # Find local origin
@@ -87,29 +87,31 @@ def infoExt(filename , epsgCode):
         if local_placement.is_a("IfcAxis2Placement3D"):
             local_origin = local_placement.Location.Coordinates
             bx,by,bz= local_origin
-            message += f"Local Origin: {local_origin}\n"
+            messages.append(('IFC Local Origin', local_origin))
         else:
-                message += "Local placement is not IfcAxis2Placement3D."
-                return message
+                errorMessage = "Local placement is not IfcAxis2Placement3D."
+                return messages, errorMessage
     else:
-            message += "IfcSite does not have a local placement."
-            return message
+            errorMessage = "IfcSite does not have a local placement."
+            return messages, errorMessage
                 
     # Target CRS unit name
     try: 
         crs = pyproj.CRS.from_epsg(int(epsgCode))
     except:
-        message += "CRS is not available."
-        return message
+        errorMessage = "CRS is not available."
+        return messages, errorMessage
 
 
     crsunit = crs.axis_info[0].unit_name
 
     if crs.is_projected:
-        message += "CRS is projected.\n"
+        messages.append(('Target CRS Type', 'Projected'))
+        messages.append(('Target CRS EPSG', epsgCode))
+
     else:
-        message += "CRS is not projected (geographic)."
-        return message
+        errorMessage = "CRS is not projected (geographic)."
+        return messages, errorMessage
     target_epsg = "EPSG:"+str(epsgCode)
     transformer = Transformer.from_crs("EPSG:4326", target_epsg)
     # IFC length unit name
@@ -151,26 +153,27 @@ def infoExt(filename , epsgCode):
     if crsmeter is not None and ifcmeter is not None:
         coeff= ifcmeter/crsmeter
     else:
-        message += "measurement error"
-        return message
+        errorMessage = "IFC/Map unit error"
+        return messages, errorMessage
     if Refl:
-        message += f"Longitude: {round(y0,4)}\n"
-        message += f"Latitude: {round(x0,4)}\n"
-        message += f"Reference Elevation: {RElev}\n"
-    message += f"Target CRS Unit: {crsunit}\n"
+        messages.append(("Reference Longitude",round(y0,4)))
+        messages.append(("Reference Latitude",round(x0,4)))
+        messages.append(("Reference Elevation",RElev))
+
+    messages.append(("Target CRS Unit",str.lower(crsunit)))
+
     session['mapunit'] = str.lower(crsunit)
 
     if ifcunit:
         unit_name = ifcunit
-        message += f"IFC Unit: {unit_name}\n"
+        messages.append(("IFC Unit",str.lower(unit_name)))
         session['ifcunit'] = str.lower(unit_name)
 
-
     else:
-        message += "No length unit found in the IFC file."
-        return message
-    message += f"coeff: {coeff}\n"
-    message += "______"
+        errorMessage = "No length unit found in the IFC file."
+        return messages, errorMessage
+    messages.append(("Unit Conversion Ratio",coeff))
+    errorMessage = ""
     session['coeff'] = coeff
     if Refl:
         x1,y1,z1 = transformer.transform(x0,y0,RElev)
@@ -183,7 +186,7 @@ def infoExt(filename , epsgCode):
         session['Latitude'] = x0
 
 
-    return message
+    return messages, errorMessage
 
 def unitmapper(value):
     ureg = pint.UnitRegistry()
@@ -243,6 +246,9 @@ def upload_file():
             epsg = int(epsgName[5:])
             message2 = infoExt(filename,epsg)
             coeff = session.get('coeff')
+            if coeff is None:
+                return render_template('result.html', filename=filename, table_f=html_table_f, table_g=html_table_g, message=message2)
+
             if int(coeff)!=1 and IfcMapConversion.Scale is None:
                 message += "We have a problem."
                 return render_template('result.html', filename=filename, table_f=html_table_f, table_g=html_table_g, message=message)
@@ -292,79 +298,81 @@ def convert_crs(filename):
             return render_template('convert.html', filename=filename, message=message)
         session['target_epsg'] = epsg_code
        # Call the infoExt function and unpack the results
-        message = infoExt(filename, epsg_code)
-        if message.endswith("______"):
+        messages, error = infoExt(filename, epsg_code)
+        if error == "":
             # Pass x2, y2, and z1 to the survey_points route
-            return redirect(url_for('survey_points', filename=filename, message= message))
-        return render_template('convert.html', filename=filename, message=message)
+            return redirect(url_for('survey_points', filename=filename))
+        return render_template('convert.html', filename=filename, message=error)
 
     return render_template('convert.html', filename=filename)
 
-@app.route('/survey/<filename>/<message>', methods=['GET', 'POST'])
-def survey_points(filename, message):
+@app.route('/survey/<filename>', methods=['GET', 'POST'])
+def survey_points(filename):
+    epsg_code = session.get('target_epsg')
+    messages, error = infoExt(filename, epsg_code)
     ifcunit = session.get('ifcunit')
     mapunit = session.get('mapunit')
     Refl = session.get('Refl')
     if Refl:
-        message += local_trans(filename)
+        messages , error = local_trans(filename,messages)
         Num = []
         if request.method == 'POST':
             try:
                 Num = int(request.form['Num'])
                 if Num < 0:
-                    message += "Please enter zero or a positive integer."
-                    return render_template('survey.html', filename=filename, message=message)
+                    error += "Please enter zero or a positive integer."
+                    return render_template('survey.html', filename=filename, messages=messages, error=error)
             except ValueError:
-                message += "Please enter zero or a positive integer."
-                return render_template('survey.html', filename=filename, message=message)
+                error += "Please enter zero or a positive integer."
+                return render_template('survey.html', filename=filename, messages=messages, error=error)
             session['rows'] = Num
             if Num == 0:
                 return redirect(url_for('calculate', filename=filename))
-        return render_template('survey.html', filename=filename, message=message, Num=Num, ifcunit=ifcunit, mapunit=mapunit)
+        return render_template('survey.html', filename=filename, messages=messages, Num=Num, ifcunit=ifcunit, mapunit=mapunit, error=error)
     else:
-        message += '\nThe IFC model has no surveyed or georeferenced attribute.\nYou need to provide at least one point in local and projected CRS.'
-        message += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is scaled based on unit conversion and rotation is derived from TrueNorth direction.\n'
+        error += '\nThe IFC model has no surveyed or georeferenced attribute.\nYou need to provide at least one point in local and target CRS.'
+        error += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is scaled based on unit conversion and rotation is derived from TrueNorth direction (if availalble).\n'
         Num = []
         if request.method == 'POST':
             try:
                 Num = int(request.form['Num'])
                 if Num <= 0:
-                    message += "Please enter a positive integer."
-                    return render_template('survey.html', filename=filename, message=message)
+                    error += "Please enter a positive integer."
+                    return render_template('survey.html', filename=filename, error=error)
             except ValueError:
-                message += "Please enter a positive integer."
-                return render_template('survey.html', filename=filename, message=message)
+                error += "Please enter a positive integer."
+                return render_template('survey.html', filename=filename, error=error)
             session['rows'] = Num
-        return render_template('survey.html', filename=filename, message=message, Num=Num, ifcunit=ifcunit, mapunit=mapunit)
+        return render_template('survey.html', filename=filename, messages=messages, Num=Num, ifcunit=ifcunit, mapunit=mapunit)
 
 
-def local_trans(filename):
+def local_trans(filename , messages):
     ifc_file = fileOpener(filename)
     xt = session.get('xt')
     yt = session.get('yt')
     z1 = session.get('z1')
     bx,by,bz = 0,0,0
-    message = ""
+    error = ""
     if hasattr(ifc_file.by_type("IfcSite")[0], "ObjectPlacement") and ifc_file.by_type("IfcSite")[0].ObjectPlacement.is_a("IfcLocalPlacement"):
         local_placement = ifc_file.by_type("IfcSite")[0].ObjectPlacement.RelativePlacement
         # Check if the local placement is an IfcAxis2Placement3D
         if local_placement.is_a("IfcAxis2Placement3D"):
             local_origin = local_placement.Location.Coordinates
             bx, by, bz = map(float, local_origin)
-            message += "\nFirst point Local coordinates:" + str(local_origin)
+            messages.append(("First point Local coordinates",str(local_origin)))
         else:
-                message += "Local placement is not IfcAxis2Placement3D."
+                error += "Local placement is not IfcAxis2Placement3D."
     else:
-            message += "IfcSite does not have a local placement."
+            error += "IfcSite does not have a local placement."
     session['bx'] = bx
     session['by'] = by        
     session['bz'] = bz        
 
-    message += "\nFirst point Target coordinates:" + "(" + str(xt) + ", " + str(yt) + ", " + str(z1) + ")"
-    message += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is scaled based on unit conversion and rotation is derived from TrueNorth direction.\n'
+    messages.append(("First Target coordinates:" , ("(" + str(xt) + ", " + str(yt) + ", " + str(z1) + ")")))
+    error += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is scaled based on unit conversion and rotation is derived from TrueNorth direction (if available).\n'
 
     ifc_file = ifc_file.end_transaction()
-    return message
+    return messages, error
 
 @app.route('/calc/<filename>', methods=['GET', 'POST'])
 def calculate(filename):
