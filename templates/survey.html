@@ -1,64 +1,155 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>surveyed points</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surveyed Points</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 800px;
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #333;
+        }
+        .error-message {
+            color: red;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: darkblue;
+            color: white;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 6px;
+            box-sizing: border-box;
+        }
+        .btn {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 10px 0;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn-link {
+            text-decoration: none;
+        }
+    </style>
     <!-- Include jQuery library -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <h1>Add surveyed points</h1>
+    <div class="container">
+        <h1>BIM and Geo Information</h1>
 
-    {% if message %}
-    <pre>{{ message | safe }}</pre>
-    {% endif %}
+        {% if messages %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for message, detail in messages %}
+                <tr>
+                    <td>{{ message }}</td>
+                    <td>{{ detail }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
 
-    {% if Num %}
-        <form method="POST" action={{ url_for('calculate', filename=filename) }}>
-            <div id="tableContainer">
-                <!-- Use Jinja2 to generate the table based on the table_content data -->
-                <table border="1">
-                    <tr>
-                        <th colspan="3" style="background-color: darkblue; color: white;">Source CRS (IFC) [{{ ifcunit }}]</th>
-                        <th colspan="3">Target CRS (MAP) [{{ mapunit }}]</th>
-                    </tr>
-                    <tr>
-                        <th style="background-color: darkblue; color: white;">X</th>
-                        <th style="background-color: darkblue; color: white;">Y</th>
-                        <th style="background-color: darkblue; color: white;">Z</th>
-                        <th>X'</th>
-                        <th>Y'</th>
-                        <th>Z'</th>
-                    </tr>
-                    {% for row in range(Num) %}
-                    <tr>
-                        <td style="background-color: darkblue; color: white;"><input type="text" name="x{{ row }}"></td>
-                        <td style="background-color: darkblue; color: white;"><input type="text" name="y{{ row }}"></td>
-                        <td style="background-color: darkblue; color: white;"><input type="text" name="z{{ row }}"></td>
-                        <td><input type="text" name="x_prime{{ row }}"></td>
-                        <td><input type="text" name="y_prime{{ row }}"></td>
-                        <td><input type="text" name="z_prime{{ row }}"></td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-            <input type="submit" value="Submit">
-        </form>
-    {% else %}
-        <form method="POST">
+        {% if error %}
+        <p class="error-message">{{ error }}</p>
+        {% endif %}
+
+
+
+
+        {% if Num %}
+            <form method="POST" action="{{ url_for('calculate', filename=filename) }}">
+                <div id="tableContainer">
+                    <!-- Use Jinja2 to generate the table based on the table_content data -->
+                    <table>
+                        <tr>
+                            <th colspan="3">Source CRS (IFC) [{{ ifcunit }}]</th>
+                            <th colspan="3">Target CRS (MAP) [{{ mapunit }}]</th>
+                        </tr>
+                        <tr>
+                            <th>X</th>
+                            <th>Y</th>
+                            <th>Z</th>
+                            <th>X'</th>
+                            <th>Y'</th>
+                            <th>Z'</th>
+                        </tr>
+                        {% for row in range(Num) %}
+                        <tr>
+                            <td><input type="text" name="x{{ row }}"></td>
+                            <td><input type="text" name="y{{ row }}"></td>
+                            <td><input type="text" name="z{{ row }}"></td>
+                            <td><input type="text" name="x_prime{{ row }}"></td>
+                            <td><input type="text" name="y_prime{{ row }}"></td>
+                            <td><input type="text" name="z_prime{{ row }}"></td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                <input type="submit" value="Submit" class="btn">
+            </form>
+        {% else %}
+            <form method="POST">
                 <label for="Num">Enter the number of extra surveyed points:</label>
                 <input type="text" id="Num" name="Num">
-                <input type="submit" value="Set">
-        </form>
-    {% endif %}
+                <input type="submit" value="Set" class="btn">
+            </form>
+        {% endif %}
+    </div>
 
-    <!-- Add script tag for the provided Java+jQuery code -->
     <script>
         $(document).ready(function() {
             $('input').bind('paste', function (e) {
                 var $start = $(this);
                 var source;
 
-                //check for access to clipboard from window or event
+                // Check for access to clipboard from window or event
                 if (window.clipboardData !== undefined) {
                     source = window.clipboardData;
                 } else {
@@ -72,10 +163,9 @@
                             var values = this.split("\t");
                             $.each(values, function () {
                                 $start.val(this);
-                                if ($start.closest('td').next('td').find('input,textarea')[0] != undefined || $start.closest('td').next('td').find('textarea')[0] != undefined) {
+                                if ($start.closest('td').next('td').find('input,textarea')[0] !== undefined) {
                                     $start = $start.closest('td').next('td').find('input,textarea');
-                                }
-                                else {
+                                } else {
                                     return false;
                                 }
                             });
@@ -88,8 +178,32 @@
 
             // Enable cell navigation
             $.fn.enableCellNavigation = function () {
-                // Provided enableCellNavigation function code
-                // ...
+                $('table').each(function () {
+                    var $table = $(this);
+                    $table.find('input,select,button,textarea').keydown(function (e) {
+                        var arrow = { left: 37, up: 38, right: 39, down: 40 };
+                        var focusPrev = function() {
+                            $(this).prev('td').find('input,select,button,textarea').focus();
+                        };
+                        var focusNext = function() {
+                            $(this).closest('td').next('td').find('input,select,button,textarea').focus();
+                        };
+                        switch (e.which) {
+                            case arrow.left:
+                                focusPrev.call(this);
+                                break;
+                            case arrow.right:
+                                focusNext.call(this);
+                                break;
+                            case arrow.up:
+                                $(this).closest('tr').prev('tr').find('td').eq($(this).closest('td').index()).find('input,select,button,textarea').focus();
+                                break;
+                            case arrow.down:
+                                $(this).closest('tr').next('tr').find('td').eq($(this).closest('td').index()).find('input,select,button,textarea').focus();
+                                break;
+                        }
+                    });
+                });
             };
 
             // Call enableCellNavigation on tables
