@@ -1,26 +1,91 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px; /* Add padding to ensure content isn't touching the edges */
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 800px;
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #333;
+        }
+        .error-message {
+            color: red;
+            margin-bottom: 20px;
+            white-space: pre-wrap; /* To preserve formatting of pre */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .btn {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 10px 0;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn-link {
+            text-decoration: none;
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        {% if message %}
+        <pre class="error-message">{{ message | safe }}</pre>
+        {% endif %}
 
-    {% if message %}
-    <pre style="color: red;">{{ message | safe }}</pre>
-    {% endif %}
+        <h1>IFCProjectedCRS Data</h1>
+        {{ table_f | safe }}
 
-    <h1>IFCProjectedCRS Data</h1>
-    {{ table_f | safe }}
+        <h1>IFCMapConversion Data</h1>
+        {{ table_g | safe }}
 
-    <h1>IFCMapConversion Data</h1>
-    {{ table_g | safe }}
-    <form method="POST" action={{ url_for('visualize', filename=filename) }}>
-        <input type="submit" value="Show on Map">
-    </form>
+        <form method="POST" action="{{ url_for('visualize', filename=filename) }}">
+            <input type="submit" value="Show on Map" class="btn">
+        </form>
 
-    {% if not message %}
-    <a href="{{ url_for('download', filename=filename) }}" download><button>Download Georeferenced IFC</button></a>
-    {% endif %}
-
+        {% if not message %}
+        <a href="{{ url_for('download', filename=filename) }}" download class="btn-link">
+            <button class="btn">Download Georeferenced IFC</button>
+        </a>
+        {% endif %}
+    </div>
 </body>
 </html>
