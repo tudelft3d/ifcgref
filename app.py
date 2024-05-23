@@ -331,7 +331,7 @@ def survey_points(filename):
         return render_template('survey.html', filename=filename, messages=messages, Num=Num, ifcunit=ifcunit, mapunit=mapunit, error=error)
     else:
         error += '\nThe IFC model has no surveyed or georeferenced attribute.\nYou need to provide at least one point in local and target CRS.'
-        error += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is scaled based on unit conversion and rotation is derived from TrueNorth direction (if availalble).\n'
+        error += '\n\nAccuracy of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is scaled based on unit conversion and rotation is derived from TrueNorth direction (if availalble).\n'
         Num = []
         if request.method == 'POST':
             try:
@@ -359,7 +359,7 @@ def local_trans(filename , messages):
         if local_placement.is_a("IfcAxis2Placement3D"):
             local_origin = local_placement.Location.Coordinates
             bx, by, bz = map(float, local_origin)
-            messages.append(("First point Local coordinates",str(local_origin)))
+            messages.append(("First Point Local Coordinates",str(local_origin)))
         else:
                 error += "Local placement is not IfcAxis2Placement3D."
     else:
@@ -368,8 +368,8 @@ def local_trans(filename , messages):
     session['by'] = by        
     session['bz'] = bz        
 
-    messages.append(("First Target coordinates:" , ("(" + str(xt) + ", " + str(yt) + ", " + str(z1) + ")")))
-    error += '\n\nThe precision of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is scaled based on unit conversion and rotation is derived from TrueNorth direction (if available).\n'
+    messages.append(("First Point Target coordinates" , ("(" + str(xt) + ", " + str(yt) + ", " + str(z1) + ")")))
+    error += '\n\nAccuracy of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is scaled based on unit conversion and rotation is derived from TrueNorth direction (if available).\n'
 
     ifc_file = ifc_file.end_transaction()
     return messages, error
