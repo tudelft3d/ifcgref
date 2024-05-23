@@ -13,13 +13,28 @@
             height: 100vh;
             background-color: #f0f0f0;
             margin: 0;
+            padding: 20px;
+            flex-direction: column;
         }
         .container {
             background-color: #fff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
             text-align: center;
+            position: relative;
+        }
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logo {
+            max-height: 60px;
         }
         h1 {
             margin-bottom: 20px;
@@ -47,9 +62,30 @@
             color: #007bff;
             cursor: pointer;
         }
+        .loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+        .loader img {
+            width: 100px;
+            height: 100px;
+            animation: fadeInOut 2s infinite;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
     </style>
 </head>
 <body>
+    <div class="header">
+        <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Logo 1" class="logo">
+        <img src="{{ url_for('static', filename='images/logo2.png') }}" alt="Logo 2" class="logo">
+    </div>
     <div class="container">
         <h1>Upload .ifc file</h1>
         
@@ -58,15 +94,23 @@
         <p class="error-message">{{ error_message }}</p>
         {% endif %}
         
-        <form method="POST" action="/upload" enctype="multipart/form-data" id="upload-form">
+        <form method="POST" action="/upload" enctype="multipart/form-data" id="upload-form" onsubmit="showLoader()">
             <div class="drop-zone" id="drop-zone">
                 <p>Drag & drop your .ifc file here, or <span class="highlight">click</span> to select a file</p>
                 <input type="file" name="file" id="file-input">
             </div>
         </form>
+
+        <div class="loader" id="loader">
+            <img src="{{ url_for('static', filename='images/loading.png') }}" alt="Loading...">
+        </div>
     </div>
 
     <script>
+        function showLoader() {
+            document.getElementById('loader').style.display = 'block';
+        }
+
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
         const form = document.getElementById('upload-form');

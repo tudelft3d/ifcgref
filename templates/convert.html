@@ -1,19 +1,136 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRS Conversion</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            flex-direction: column;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+        }
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logo {
+            max-height: 60px;
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #333;
+        }
+        .error-message {
+            color: red;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        label {
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        input[type="text"] {
+            width: 33.33%;
+            padding: 10px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .btn {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+        .loader img {
+            width: 100px;
+            height: 100px;
+            animation: fadeInOut 2s infinite;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        @media (max-width: 768px) {
+            input[type="text"] {
+                width: 50%;
+            }
+        }
+        @media (max-width: 480px) {
+            input[type="text"] {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>CRS Conversion</h1>
-    
-    {% if message %}
-    <pre>{{ message | safe }}</pre>
-    {% endif %}
-    
-    <form method="POST">
-        <label for="epsg_code">Enter the target EPSG code for the CRS (e.g., 3395):</label>
-        <input type="text" id="epsg_code" name="epsg_code">
-        <input type="submit" value="Convert">
-    </form>
+    <div class="header">
+        <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Logo 1" class="logo">
+        <img src="{{ url_for('static', filename='images/logo2.png') }}" alt="Logo 2" class="logo">
+    </div>
+    <div class="container">
+        <h1>CRS Conversion</h1>
+        
+        {% if message %}
+        <pre class="error-message">{{ message | safe }}</pre>
+        {% endif %}
+        
+        <form method="POST" onsubmit="showLoader()">
+            <label for="epsg_code">Enter the EPSG code for the Target CRS:</label>
+            <input type="text" id="epsg_code" name="epsg_code" required>
+            <input type="submit" value="Convert" class="btn">
+        </form>
+        
+        <div class="loader" id="loader">
+            <img src="{{ url_for('static', filename='images/loading.png') }}" alt="Loading...">
+        </div>
+    </div>
+
+    <script>
+        function showLoader() {
+            document.getElementById('loader').style.display = 'block';
+        }
+    </script>
 </body>
 </html>

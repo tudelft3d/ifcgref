@@ -10,8 +10,10 @@
             display: flex;
             justify-content: center;
             background-color: #f0f0f0;
+            align-items: center;
             margin: 0;
             padding: 20px;
+            flex-direction: column;
         }
         .container {
             background-color: #fff;
@@ -19,8 +21,19 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             text-align: center;
-            width: 100%;
             max-width: 800px;
+            width: 100%;
+            position: relative;
+        }
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logo {
+            max-height: 60px;
         }
         h1 {
             margin-bottom: 20px;
@@ -50,8 +63,11 @@
         }
         input[type="text"] {
             width: 100%;
-            padding: 6px;
+            padding: 10px;
+            margin-bottom: 20px;
             box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
         .btn {
             background-color: #007bff;
@@ -61,19 +77,44 @@
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s;
-            margin: 10px 0;
         }
         .btn:hover {
             background-color: #0056b3;
         }
-        .btn-link {
-            text-decoration: none;
+        .loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+        .loader img {
+            width: 100px;
+            height: 100px;
+            animation: fadeInOut 2s infinite;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        @media (max-width: 768px) {
+            input[type="text"] {
+                width: 50%;
+            }
+        }
+        @media (max-width: 480px) {
+            input[type="text"] {
+                width: 100%;
+            }
         }
     </style>
-    <!-- Include jQuery library -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
+    <div class="header">
+        <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Logo 1" class="logo">
+        <img src="{{ url_for('static', filename='images/logo2.png') }}" alt="Logo 2" class="logo">
+    </div>
     <div class="container">
         <h1>BIM and Geo Information</h1>
 
@@ -100,11 +141,8 @@
         <p class="error-message">{{ error }}</p>
         {% endif %}
 
-
-
-
         {% if Num %}
-            <form method="POST" action="{{ url_for('calculate', filename=filename) }}">
+            <form method="POST" action="{{ url_for('calculate', filename=filename) }}" onsubmit="showLoader()">
                 <div id="tableContainer">
                     <!-- Use Jinja2 to generate the table based on the table_content data -->
                     <table>
@@ -135,80 +173,22 @@
                 <input type="submit" value="Submit" class="btn">
             </form>
         {% else %}
-            <form method="POST">
+            <form method="POST" onsubmit="showLoader()">
                 <label for="Num">Enter the number of extra surveyed points:</label>
                 <input type="text" id="Num" name="Num">
                 <input type="submit" value="Set" class="btn">
             </form>
         {% endif %}
+        
+        <div class="loader" id="loader">
+            <img src="{{ url_for('static', filename='images/loading.png') }}" alt="Loading...">
+        </div>
     </div>
 
     <script>
-        $(document).ready(function() {
-            $('input').bind('paste', function (e) {
-                var $start = $(this);
-                var source;
-
-                // Check for access to clipboard from window or event
-                if (window.clipboardData !== undefined) {
-                    source = window.clipboardData;
-                } else {
-                    source = e.originalEvent.clipboardData;
-                }
-                var data = source.getData("Text");
-                if (data.length > 0) {
-                    if (data.indexOf("\t") > -1) {
-                        var columns = data.split("\n");
-                        $.each(columns, function () {
-                            var values = this.split("\t");
-                            $.each(values, function () {
-                                $start.val(this);
-                                if ($start.closest('td').next('td').find('input,textarea')[0] !== undefined) {
-                                    $start = $start.closest('td').next('td').find('input,textarea');
-                                } else {
-                                    return false;
-                                }
-                            });
-                            $start = $start.closest('td').parent().next('tr').children('td:first').find('input,textarea');
-                        });
-                        e.preventDefault();
-                    }
-                }
-            });
-
-            // Enable cell navigation
-            $.fn.enableCellNavigation = function () {
-                $('table').each(function () {
-                    var $table = $(this);
-                    $table.find('input,select,button,textarea').keydown(function (e) {
-                        var arrow = { left: 37, up: 38, right: 39, down: 40 };
-                        var focusPrev = function() {
-                            $(this).prev('td').find('input,select,button,textarea').focus();
-                        };
-                        var focusNext = function() {
-                            $(this).closest('td').next('td').find('input,select,button,textarea').focus();
-                        };
-                        switch (e.which) {
-                            case arrow.left:
-                                focusPrev.call(this);
-                                break;
-                            case arrow.right:
-                                focusNext.call(this);
-                                break;
-                            case arrow.up:
-                                $(this).closest('tr').prev('tr').find('td').eq($(this).closest('td').index()).find('input,select,button,textarea').focus();
-                                break;
-                            case arrow.down:
-                                $(this).closest('tr').next('tr').find('td').eq($(this).closest('td').index()).find('input,select,button,textarea').focus();
-                                break;
-                        }
-                    });
-                });
-            };
-
-            // Call enableCellNavigation on tables
-            $('table').enableCellNavigation();
-        });
+        function showLoader() {
+            document.getElementById('loader').style.display = 'block';
+        }
     </script>
 </body>
 </html>

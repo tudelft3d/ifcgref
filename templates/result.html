@@ -10,8 +10,10 @@
             display: flex;
             justify-content: center;
             background-color: #f0f0f0;
+            align-items: center;
             margin: 0;
-            padding: 20px; /* Add padding to ensure content isn't touching the edges */
+            padding: 20px;
+            flex-direction: column;
         }
         .container {
             background-color: #fff;
@@ -19,8 +21,19 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             text-align: center;
-            width: 100%;
             max-width: 800px;
+            width: 100%;
+            position: relative;
+        }
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logo {
+            max-height: 60px;
         }
         h1 {
             margin-bottom: 20px;
@@ -30,7 +43,7 @@
         .error-message {
             color: red;
             margin-bottom: 20px;
-            white-space: pre-wrap; /* To preserve formatting of pre */
+            white-space: pre-wrap;
         }
         table {
             width: 100%;
@@ -63,21 +76,42 @@
         .btn-link {
             text-decoration: none;
         }
+        .loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+        .loader img {
+            width: 100px;
+            height: 100px;
+            animation: fadeInOut 2s infinite;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
     </style>
 </head>
 <body>
+    <div class="header">
+        <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Logo 1" class="logo">
+        <img src="{{ url_for('static', filename='images/logo2.png') }}" alt="Logo 2" class="logo">
+    </div>
     <div class="container">
+
         {% if message %}
         <pre class="error-message">{{ message | safe }}</pre>
         {% endif %}
-
         <h1>IFCProjectedCRS Data</h1>
         {{ table_f | safe }}
 
         <h1>IFCMapConversion Data</h1>
         {{ table_g | safe }}
 
-        <form method="POST" action="{{ url_for('visualize', filename=filename) }}">
+        <form method="POST" action="{{ url_for('visualize', filename=filename) }}" onsubmit="showLoader()">
             <input type="submit" value="Show on Map" class="btn">
         </form>
 
@@ -86,6 +120,16 @@
             <button class="btn">Download Georeferenced IFC</button>
         </a>
         {% endif %}
+        
+        <div class="loader" id="loader">
+            <img src="{{ url_for('static', filename='images/loading.png') }}" alt="Loading...">
+        </div>
     </div>
+
+    <script>
+        function showLoader() {
+            document.getElementById('loader').style.display = 'block';
+        }
+    </script>
 </body>
 </html>
