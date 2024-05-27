@@ -81,6 +81,22 @@
         .btn:hover {
             background-color: #0056b3;
         }
+        .box {
+            display: inline-block;
+            margin: 10px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            overflow: hidden; /* Ensure the image does not exceed the box */
+        }
+        .box img {
+            display: block;
+            width: 150px;
+            height: auto;
+            margin: 0 auto;
+        }
         .loader {
             position: absolute;
             top: 50%;
@@ -141,6 +157,17 @@
         <p class="error-message">{{ error }}</p>
         {% endif %}
 
+                <!-- New boxes with images -->
+        <div class="box" id="box1" onclick="sendComment('box1')">
+            <img src="{{ url_for('static', filename='images/way1.png') }}" alt="Image 1">
+        </div>
+        <div class="box" id="box2" onclick="sendComment('box2')">
+            <img src="{{ url_for('static', filename='images/way2.png') }}" alt="Image 2">
+        </div>
+        <div class="box" id="box3" onclick="sendComment('box3')">
+            <img src="{{ url_for('static', filename='images/way3.png') }}" alt="Image 3">
+        </div>
+
         {% if Num %}
             <form method="POST" action="{{ url_for('calculate', filename=filename) }}" onsubmit="showLoader()">
                 <div id="tableContainer">
@@ -180,6 +207,8 @@
             </form>
         {% endif %}
         
+
+
         <div class="loader" id="loader">
             <img src="{{ url_for('static', filename='images/loading.png') }}" alt="Loading...">
         </div>
@@ -188,6 +217,22 @@
     <script>
         function showLoader() {
             document.getElementById('loader').style.display = 'block';
+        }
+
+        function sendComment(boxId) {
+            fetch('/comment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ comment: boxId }),
+            }).then(response => response.json())
+              .then(data => {
+                console.log('Success:', data);
+              })
+              .catch((error) => {
+                console.error('Error:', error);
+              });
         }
     </script>
 </body>
