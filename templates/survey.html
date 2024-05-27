@@ -157,16 +157,8 @@
         <p class="error-message">{{ error }}</p>
         {% endif %}
 
-                <!-- New boxes with images -->
-        <div class="box" id="box1" onclick="sendComment('box1')">
-            <img src="{{ url_for('static', filename='images/way1.png') }}" alt="Image 1">
-        </div>
-        <div class="box" id="box2" onclick="sendComment('box2')">
-            <img src="{{ url_for('static', filename='images/way2.png') }}" alt="Image 2">
-        </div>
-        <div class="box" id="box3" onclick="sendComment('box3')">
-            <img src="{{ url_for('static', filename='images/way3.png') }}" alt="Image 3">
-        </div>
+        <!-- New boxes with images -->
+
 
         {% if Num %}
             <form method="POST" action="{{ url_for('calculate', filename=filename) }}" onsubmit="showLoader()">
@@ -200,14 +192,21 @@
                 <input type="submit" value="Submit" class="btn">
             </form>
         {% else %}
-            <form method="POST" onsubmit="showLoader()">
+            <div class="box" id="box1">
+                <img src="{{ url_for('static', filename='images/way1.png') }}" alt="Image 1">
+            </div>
+            <div class="box" id="box2">
+                <img src="{{ url_for('static', filename='images/way2.png') }}" alt="Image 2">
+            </div>
+            <div class="box" id="box3">
+                <img src="{{ url_for('static', filename='images/way3.png') }}" alt="Image 3">
+            </div>
+            <form method="POST" onsubmit="showLoader()" id="numForm" style="display: none;">
                 <label for="Num">Enter the number of extra surveyed points:</label>
                 <input type="text" id="Num" name="Num">
                 <input type="submit" value="Set" class="btn">
             </form>
         {% endif %}
-        
-
 
         <div class="loader" id="loader">
             <img src="{{ url_for('static', filename='images/loading.png') }}" alt="Loading...">
@@ -218,22 +217,27 @@
         function showLoader() {
             document.getElementById('loader').style.display = 'block';
         }
-
-        function sendComment(boxId) {
-            fetch('/comment', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ comment: boxId }),
-            }).then(response => response.json())
-              .then(data => {
-                console.log('Success:', data);
-              })
-              .catch((error) => {
-                console.error('Error:', error);
-              });
+        function hideBoxes(exceptId) {
+            const boxes = ['box1', 'box2', 'box3'];
+            boxes.forEach(boxId => {
+                document.getElementById(boxId).style.display = boxId === exceptId ? 'block' : 'none';
+            });
         }
+
+        document.getElementById('box1').addEventListener('click', function() {
+            document.getElementById('numForm').style.display = 'none';
+            document.getElementById('Num').value = '0';
+            document.getElementById('numForm').submit();        });
+
+        document.getElementById('box2').addEventListener('click', function() {
+            hideBoxes('box2');
+            document.getElementById('numForm').style.display = 'block';
+        });
+
+        document.getElementById('box3').addEventListener('click', function() {
+            hideBoxes('box3');
+            document.getElementById('numForm').style.display = 'block';
+        });
     </script>
 </body>
 </html>
