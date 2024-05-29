@@ -45,6 +45,13 @@
             margin-bottom: 20px;
             white-space: pre-wrap;
         }
+
+        .txts {
+            color: black;
+            font-weight: bolder;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -85,6 +92,8 @@
             display: inline-block;
             margin: 10px;
             padding: 20px;
+            width: 150px;
+            height: 120px;
             border: 1px solid #ccc;
             border-radius: 4px;
             cursor: pointer;
@@ -108,6 +117,11 @@
             width: 100px;
             height: 100px;
             animation: fadeInOut 2s infinite;
+        }
+        .info-text {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #333;
         }
         @keyframes fadeInOut {
             0% { opacity: 0; }
@@ -157,8 +171,25 @@
         <p class="error-message">{{ error }}</p>
         {% endif %}
 
-        <!-- New boxes with images -->
+        {% if not Num %}
+        <p class="txts">Choose how you want to georeference your IFC file?</p>
+        {% endif%}
 
+
+
+        <!-- New boxes with images and texts -->
+        <div class="box" id="box1">
+            <img src="{{ url_for('static', filename='images/way1.png') }}" alt="Image 1">
+            <div class="info-text">Use existing information</div>
+        </div>
+        <div class="box" id="box2">
+            <img src="{{ url_for('static', filename='images/way2.png') }}" alt="Image 2">
+            <div class="info-text">Add surveyed points to existing information</div>
+        </div>
+        <div class="box" id="box3">
+            <img src="{{ url_for('static', filename='images/way3.png') }}" alt="Image 3">
+            <div class="info-text">Add surveyed points and ignore existing information</div>
+        </div>
 
         {% if Num %}
             <form method="POST" action="{{ url_for('calculate', filename=filename) }}" onsubmit="showLoader()">
@@ -192,15 +223,6 @@
                 <input type="submit" value="Submit" class="btn">
             </form>
         {% else %}
-            <div class="box" id="box1">
-                <img src="{{ url_for('static', filename='images/way1.png') }}" alt="Image 1">
-            </div>
-            <div class="box" id="box2">
-                <img src="{{ url_for('static', filename='images/way2.png') }}" alt="Image 2">
-            </div>
-            <div class="box" id="box3">
-                <img src="{{ url_for('static', filename='images/way3.png') }}" alt="Image 3">
-            </div>
             <form method="POST" onsubmit="showLoader()" id="numForm" style="display: none;">
                 <label for="Num">Enter the number of extra surveyed points:</label>
                 <input type="text" id="Num" name="Num">
@@ -217,17 +239,24 @@
         function showLoader() {
             document.getElementById('loader').style.display = 'block';
         }
+
         function hideBoxes(exceptId) {
             const boxes = ['box1', 'box2', 'box3'];
             boxes.forEach(boxId => {
-                document.getElementById(boxId).style.display = boxId === exceptId ? 'block' : 'none';
+                const box = document.getElementById(boxId);
+                if (boxId === exceptId) {
+                    box.style.display = 'block';
+                } else {
+                    box.style.display = 'none';
+                }
             });
         }
 
         document.getElementById('box1').addEventListener('click', function() {
             document.getElementById('numForm').style.display = 'none';
             document.getElementById('Num').value = '0';
-            document.getElementById('numForm').submit();        });
+            document.getElementById('numForm').submit();
+        });
 
         document.getElementById('box2').addEventListener('click', function() {
             hideBoxes('box2');
