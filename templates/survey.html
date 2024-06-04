@@ -6,10 +6,10 @@
     <title>Surveyed Points</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             justify-content: center;
-            background-color: #f0f0f0;
+            background-color: #f8f9fa;
             align-items: center;
             margin: 0;
             padding: 20px;
@@ -142,8 +142,8 @@
 </head>
 <body>
     <div class="header">
-        <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Logo 1" class="logo">
-        <img src="{{ url_for('static', filename='images/logo2.png') }}" alt="Logo 2" class="logo">
+        <img src="../static/images/logo1.png" alt="Logo 1" class="logo">
+        <a href="https://3d.bk.tudelft.nl/"><img src="../static/images/logo2.png" alt="Logo 2" class="logo"></a>
     </div>
     <div class="container">
         <h1>BIM and Geo Information</h1>
@@ -172,24 +172,25 @@
         {% endif %}
 
         {% if not Num %}
-        <p class="txts">Choose how you want to georeference your IFC file?</p>
+        <p class="txts">Choose how you want to georeference your IFC file.</p>
+        <div class="box" id="box1">
+            <img src="../static/images/way1.png" alt="Image 1">
+            <div class="info-text">Use existing information</div>
+        </div>
+        <div class="box" id="box2">
+            <img src="../static/images/way2.png" alt="Image 2">
+            <div class="info-text">Add surveyed points to existing information</div>
+        </div>
+        <div class="box" id="box3">
+            <img src="../static/images/way3.png" alt="Image 3">
+            <div class="info-text">Add surveyed points and ignore existing information</div>
+        </div>
         {% endif%}
 
 
 
         <!-- New boxes with images and texts -->
-        <div class="box" id="box1">
-            <img src="{{ url_for('static', filename='images/way1.png') }}" alt="Image 1">
-            <div class="info-text">Use existing information</div>
-        </div>
-        <div class="box" id="box2">
-            <img src="{{ url_for('static', filename='images/way2.png') }}" alt="Image 2">
-            <div class="info-text">Add surveyed points to existing information</div>
-        </div>
-        <div class="box" id="box3">
-            <img src="{{ url_for('static', filename='images/way3.png') }}" alt="Image 3">
-            <div class="info-text">Add surveyed points and ignore existing information</div>
-        </div>
+
 
         {% if Num %}
             <form method="POST" action="{{ url_for('calculate', filename=filename) }}" onsubmit="showLoader()">
@@ -255,6 +256,7 @@
         document.getElementById('box1').addEventListener('click', function() {
             document.getElementById('numForm').style.display = 'none';
             document.getElementById('Num').value = '0';
+            showLoader();
             document.getElementById('numForm').submit();
         });
 
