@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>three.js webgl - IFCLoader with Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <link type="text/css" rel="stylesheet" href="/templates/main.css" />
+    <style>
+        body { margin: 0; padding: 0; }
+        html, body, #map { height: 100%; }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script src='https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.js'></script>
+<link rel='stylesheet' href='https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.css' />
+
+<script type="importmap">
+    {
+        "imports": {
+            "three": "/templates/build/three.module.js",
+            "three/addons/": "/templates/jsm/",
+            "three/examples/jsm/utils/BufferGeometryUtils": "/templates/jsm/utils/BufferGeometryUtils.js",
+            "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.5.23/build/index.module.js",
+            "web-ifc": "https://cdn.jsdelivr.net/npm/web-ifc@0.0.36/web-ifc-api.js",
+            "web-ifc-three": "https://cdn.jsdelivr.net/npm/web-ifc-three@0.0.126/IFCLoader.js"
+        }
+    }
+</script>
+
+<script type="module">
+    // var Lat = 52.00521088030612;
+    // var Long = 4.369247914020436;
+    // var fn = 'bouwkunde.ifc';
+    // var Rot = 0.017;
+    var org = [0,0,0]
+    var Lat = '{{ Latitude }}';
+    var Long = '{{ Longitude }}';
+    var fn = '{{filename}}';
+    var Rot = '{{Rotate}}';
+    //var org = '{{origin}}'
+
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { IFCLoader } from 'web-ifc-three';
+    import { IFCSPACE } from 'web-ifc';
+
+    let scene, renderer, map, customLayer, ifcLoader;
+
+    async function init() {
+
+        // Initialize Map
+        map = new maplibregl.Map({
+            container: 'map',
+            style: 'https://api.maptiler.com/maps/openstreetmap/style.json?key=0WhPYrwttynpLXQDYYip',
+            zoom: 18,
+            center: [Long, Lat],
+            pitch: 60,
+            antialias: true
+        });
+
+        const modelOrigin = [Long, Lat];
+        const modelAltitude = 0;
+        const modelRotate = [Math.PI / 2, Rot, 0];
+        const modelAsMercatorCoordinate = maplibregl.MercatorCoordinate.fromLngLat(modelOrigin, modelAltitude);
+        const customTranslateX = org.at(0) * modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
+        const customTranslateY = org.at(1) * modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
+
+        // const customTranslateX = 0.000002;
+        const modelTransform = {
+            translateX: modelAsMercatorCoordinate.x + customTranslateX,
+            translateY: modelAsMercatorCoordinate.y + customTranslateY,
+            translateZ: modelAsMercatorCoordinate.z,
+            rotateX: modelRotate[0],
+            rotateY: modelRotate[1],
+            rotateZ: modelRotate[2],
+            scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits()
+        };
+
+        // Scene
+        scene = new THREE.Scene();
+        //scene.background = new THREE.Color(0x8cc7de);
+
+        // Lights
+        const directionalLight1 = new THREE.DirectionalLight(0xffeeff, 2.5);
+        directionalLight1.position.set(1, 1, 1);
+        scene.add(directionalLight1);
+
+        const directionalLight2 = new THREE.DirectionalLight(0xffffff, 2.5);
+        directionalLight2.position.set(-1, 0.5, -1);
+        scene.add(directionalLight2);
+
+        const ambientLight = new THREE.AmbientLight(0xffffee, 0.75);
+        scene.add(ambientLight);
+
+        // Setup IFC Loader
+        ifcLoader = new IFCLoader();
+        await ifcLoader.ifcManager.setWasmPath('https://cdn.jsdelivr.net/npm/web-ifc@0.0.36/', true);
+        await ifcLoader.ifcManager.parser.setupOptionalCategories({ [IFCSPACE]: false });
+        await ifcLoader.ifcManager.applyWebIfcConfig({ USE_FAST_BOOLS: true });
+        const filePath = '/uploads/' + fn;
+        ifcLoader.load(filePath, function (model) {
+            scene.add(model.mesh);
+            render();
+        });
+
+        // Renderer
+        renderer = new THREE.WebGLRenderer({
+            canvas: map.getCanvas(),
+            context: map.painter.context.gl,
+            antialias: true
+        });
+        renderer.autoClear = false;
+
+        customLayer = {
+            id: '3d-model',
+            type: 'custom',
+            renderingMode: '3d',
+            onAdd: function(map, gl) {
+                this.map = map;
+                this.renderer = renderer;
+                this.scene = scene;
+                this.camera = new THREE.PerspectiveCamera();
+            },
+            render: function(gl, matrix) {
+                const rotationX = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1, 0, 0), modelTransform.rotateX);
+                const rotationY = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0, 1, 0), modelTransform.rotateY);
+                const rotationZ = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0, 0, 1), modelTransform.rotateZ);
+
+                const m = new THREE.Matrix4().fromArray(matrix);
+                const l = new THREE.Matrix4()
+                    .makeTranslation(modelTransform.translateX, modelTransform.translateY, modelTransform.translateZ)
+                    .scale(new THREE.Vector3(modelTransform.scale, -modelTransform.scale, modelTransform.scale))
+                    .multiply(rotationX)
+                    .multiply(rotationY)
+                    .multiply(rotationZ);
+
+                this.camera.projectionMatrix = m.multiply(l);
+                this.renderer.resetState();
+                this.renderer.render(this.scene, this.camera);
+                this.map.triggerRepaint();
+            }
+        };
+
+        map.on('style.load', () => {
+            map.addLayer(customLayer);
+        });
+
+        window.addEventListener('resize', onWindowResize);
+        render();
+    }
+
+    function onWindowResize() {
+        customLayer.camera.aspect = window.innerWidth / window.innerHeight;
+        customLayer.camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        render();
+    }
+
+    function render() {
+        if (customLayer.camera) {
+            renderer.render(scene, customLayer.camera);
+        }
+    }
+
+    init();
+
+</script>
+</body>
+</html>
