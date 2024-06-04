@@ -172,19 +172,27 @@
         {% endif %}
 
         {% if not Num %}
-        <p class="txts">Choose how you want to georeference your IFC file.</p>
-        <div class="box" id="box1">
-            <img src="../static/images/way1.png" alt="Image 1">
-            <div class="info-text">Use existing information</div>
-        </div>
-        <div class="box" id="box2">
-            <img src="../static/images/way2.png" alt="Image 2">
-            <div class="info-text">Add surveyed points to existing information</div>
-        </div>
-        <div class="box" id="box3">
-            <img src="../static/images/way3.png" alt="Image 3">
-            <div class="info-text">Add surveyed points and ignore existing information</div>
-        </div>
+            {% if Refl %}
+            <p class="txts">Choose how you want to georeference your IFC file.</p>
+            <div class="box" id="box1">
+                <img src="../static/images/way1.png" alt="Image 1">
+                <div class="info-text">Use existing information</div>
+            </div>
+            <div class="box" id="box2">
+                <img src="../static/images/way2.png" alt="Image 2">
+                <div class="info-text">Add surveyed points to existing information</div>
+            </div>
+            <div class="box" id="box3">
+                <img src="../static/images/way3.png" alt="Image 3">
+                <div class="info-text">Add surveyed points and ignore existing information</div>
+            </div>
+            {% else %}
+            <form method="POST" onsubmit="showLoader()" id="numForm">
+                <label for="Num">Enter the number of extra surveyed points:</label>
+                <input type="text" id="Num" name="Num">
+                <input type="submit" value="Set" class="btn">
+            </form>
+            {% endif %}
         {% endif%}
 
 
@@ -251,6 +259,9 @@
                     box.style.display = 'none';
                 }
             });
+            if (exceptId === 'box3') {
+                Refl = false; // Assuming Refl is a variable accessible in your Javascript context
+             }
         }
 
         document.getElementById('box1').addEventListener('click', function() {
@@ -258,16 +269,19 @@
             document.getElementById('Num').value = '0';
             showLoader();
             document.getElementById('numForm').submit();
+            document.cookie = "Refl=True"; // Set a cookie with Refl value
         });
 
         document.getElementById('box2').addEventListener('click', function() {
             hideBoxes('box2');
             document.getElementById('numForm').style.display = 'block';
+            document.cookie = "Refl=True"; // Set a cookie with Refl value
         });
 
         document.getElementById('box3').addEventListener('click', function() {
             hideBoxes('box3');
             document.getElementById('numForm').style.display = 'block';
+            document.cookie = "Refl="; // Set a cookie with Refl value
         });
     </script>
 </body>
