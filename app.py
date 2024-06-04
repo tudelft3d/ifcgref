@@ -314,7 +314,11 @@ def survey_points(filename):
     messages, error = infoExt(filename, epsg_code)
     ifcunit = session.get('ifcunit')
     mapunit = session.get('mapunit')
-    Refl = session.get('Refl')
+    if request.method != 'POST':
+        Refl = session.get('Refl')
+    else:
+            Refl = bool(request.cookies.get('Refl'))
+            session['Refl'] = Refl
     if Refl:
         messages , error = local_trans(filename,messages)
         Num = []
@@ -332,7 +336,7 @@ def survey_points(filename):
                 return redirect(url_for('calculate', filename=filename))
         return render_template('survey.html', filename=filename, messages=messages, Num=Num, ifcunit=ifcunit, mapunit=mapunit, error=error, Refl = Refl)
     else:
-        error += '\nThe IFC model has no surveyed or georeferenced attribute.\nYou need to provide at least one point in local and target CRS.'
+        error += '\nThe model has no surveyed or georeferenced attribute.\nYou need to provide at least one point in local and target CRS.'
         error += '\n\nAccuracy of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is scaled based on unit conversion and rotation is derived from TrueNorth direction (if availalble).\n'
         Num = []
         if request.method == 'POST':
