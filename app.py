@@ -679,7 +679,7 @@ def visualize(filename):
     # else:
     # Latitude =gpoly[0][0][0][1]
     # Longitude =gpoly[0][0][0][0]
-    return render_template('view3.html', filename=filename, Latitude=Latitude, Longitude=Longitude, Rotate=Rotation_solution, origin = org)
+    return render_template('view3D.html', filename=filename, Latitude=Latitude, Longitude=Longitude, Rotate=Rotation_solution, origin = org)
 
 @app.route('/download/<filename>', methods=['GET'])
 def download(filename):
