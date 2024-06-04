@@ -6,12 +6,11 @@
     <title>File Upload</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             justify-content: center;
+            background-color: #f8f9fa;
             align-items: center;
-            height: 100vh;
-            background-color: #f0f0f0;
             margin: 0;
             padding: 20px;
             flex-direction: column;
@@ -83,8 +82,8 @@
 </head>
 <body>
     <div class="header">
-        <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Logo 1" class="logo">
-        <img src="{{ url_for('static', filename='images/logo2.png') }}" alt="Logo 2" class="logo">
+        <img src="../static/images/logo1.png" alt="Logo 1" class="logo">
+        <a href="https://3d.bk.tudelft.nl/"><img src="../static/images/logo2.png" alt="Logo 2" class="logo"></a>
     </div>
     <div class="container">
         <h1>Upload .ifc file</h1>
@@ -144,5 +143,7 @@
             }
         });
     </script>
+        <p><a href="/templates/guid.html">User Guid</a></p>
+    
 </body>
 </html>
