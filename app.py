@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, make_response # Import the redirect function
+from flask import Flask, render_template, request, redirect, url_for, session, make_response, send_from_directory # Import the redirect function
 from werkzeug.utils import secure_filename
 import os
 import ifcopenshell
@@ -250,10 +250,12 @@ def upload_file():
                 return render_template('result.html', filename=filename, table_f=html_table_f, table_g=html_table_g, message=message2)
 
             if int(coeff)!=1 and IfcMapConversion.Scale is None:
-                message += "We have a problem."
+                message += "There is a conflict between Scale factor and unit conversion. (Yet to be decided by buildingSmart.)"
+                session['scaleError']=True
                 return render_template('result.html', filename=filename, table_f=html_table_f, table_g=html_table_g, message=message)
             if int(coeff)!=1 and int(IfcMapConversion.Scale) == 1:
-                message += "We have a problem."
+                message += "There is a conflict between Scale factor and unit conversion. (Yet to be decided by buildingSmart.)"
+                session['scaleError']=True
             return render_template('result.html', filename=filename, table_f=html_table_f, table_g=html_table_g, message=message)
         
         return redirect(url_for('convert_crs', filename=filename))  # Redirect to EPSG code input page
@@ -328,7 +330,7 @@ def survey_points(filename):
             session['rows'] = Num
             if Num == 0:
                 return redirect(url_for('calculate', filename=filename))
-        return render_template('survey.html', filename=filename, messages=messages, Num=Num, ifcunit=ifcunit, mapunit=mapunit, error=error)
+        return render_template('survey.html', filename=filename, messages=messages, Num=Num, ifcunit=ifcunit, mapunit=mapunit, error=error, Refl = Refl)
     else:
         error += '\nThe IFC model has no surveyed or georeferenced attribute.\nYou need to provide at least one point in local and target CRS.'
         error += '\n\nAccuracy of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is scaled based on unit conversion and rotation is derived from TrueNorth direction (if availalble).\n'
@@ -343,7 +345,7 @@ def survey_points(filename):
                 error += "Please enter a positive integer."
                 return render_template('survey.html', filename=filename, error=error)
             session['rows'] = Num
-        return render_template('survey.html', filename=filename, messages=messages, Num=Num, ifcunit=ifcunit, mapunit=mapunit)
+        return render_template('survey.html', filename=filename, messages=messages, Num=Num, ifcunit=ifcunit, mapunit=mapunit, Refl = Refl)
 
 
 def local_trans(filename , messages):
@@ -513,45 +515,48 @@ def fileOpener(filename):
         print("Error opening IFC file:", str(e))  # Add this line for debugging
         return None
 
-@app.route('/show/<filename>', methods=['GET', 'POST'])
+@app.route('/show/<filename>', methods=['POST'])
 def visualize(filename):
     fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     fn_output = re.sub('\.ifc$','_georeferenced.ifc', fn)
-
-    ifc_file = fileOpener(filename)
-    ifc_units = ifc_file.by_type("IfcUnitAssignment")[0].Units
-    for ifc_unit in ifc_units:
-        if ifc_unit.is_a("IfcSIUnit") and ifc_unit.UnitType == "LENGTHUNIT":
-            if ifc_unit.Prefix is not None:
-                ifcunit = ifc_unit.Prefix + ifc_unit.Name
-            else:
-                ifcunit = ifc_unit.Name
-
-    ureg = pint.UnitRegistry()
-    quantity= unitmapper(ifcunit)
-    mag = (quantity.to(ureg.meter).magnitude)*1000
-
     if not os.path.exists(fn_output):
         fn_output = fn
-        ifc_file = fileOpener(filename)
-        RLat = ifc_file.by_type("IfcSite")[0].RefLatitude
-        RLon = ifc_file.by_type("IfcSite")[0].RefLongitude
-        RElev = ifc_file.by_type("IfcSite")[0].RefElevation
-
-        if RLat is not None and RLon is not None:
-            x0= (float(RLat[0]) + float(RLat[1])/60 + float(RLat[2]+RLat[3]/1000000)/(60*60))
-            y0= (float(RLon[0]) + float(RLon[1])/60 + float(RLon[2]+RLon[3]/1000000)/(60*60))
-            session['Longitude'] = y0
-            session['Latitude'] = x0
-
-            session['Refl'] = True
-        else:
-            session['Refl'] = False
-
-    Refl = session.get('Refl')
     ifc_file = ifcopenshell.open(fn_output)
+    # ifc_units = ifc_file.by_type("IfcUnitAssignment")[0].Units
+    # for ifc_unit in ifc_units:
+    #     if ifc_unit.is_a("IfcSIUnit") and ifc_unit.UnitType == "LENGTHUNIT":
+    #         if ifc_unit.Prefix is not None:
+    #             ifcunit = ifc_unit.Prefix + ifc_unit.Name
+    #         else:
+    #             ifcunit = ifc_unit.Name
+
+    # ureg = pint.UnitRegistry()
+    # quantity= unitmapper(ifcunit)
+    # mag = (quantity.to(ureg.meter).magnitude)*1000
+
+
+    #     ifc_file = fileOpener(filename)
+    #     RLat = ifc_file.by_type("IfcSite")[0].RefLatitude
+    #     RLon = ifc_file.by_type("IfcSite")[0].RefLongitude
+    #     RElev = ifc_file.by_type("IfcSite")[0].RefElevation
+
+    #     if RLat is not None and RLon is not None:
+    #         x0= (float(RLat[0]) + float(RLat[1])/60 + float(RLat[2]+RLat[3]/1000000)/(60*60))
+    #         y0= (float(RLon[0]) + float(RLon[1])/60 + float(RLon[2]+RLon[3]/1000000)/(60*60))
+    #         session['Longitude'] = y0
+    #         session['Latitude'] = x0
+
+    #         session['Refl'] = True
+    #     else:
+    #         session['Refl'] = False
+    # source_coord = ifc_file.by_type('IfcProject')[0].RepresentationContexts[0][4][0].Coordinates
+
+    # Refl = session.get('Refl')
+    # ifc_file = ifcopenshell.open(filename)
     IfcMapConversion, IfcProjectedCRS = georeference_ifc.get_mapconversion_crs(ifc_file=ifc_file)
     target = IfcProjectedCRS.Name.split(':')
+    org = ifc_file.by_type('IfcProject')[0].RepresentationContexts[0].WorldCoordinateSystem.Location.Coordinates
+    # org = IfcMapConversion.SourceCRS.WorldCoordinateSystem.Location.Coordinates
     E = IfcMapConversion.Eastings
     N = IfcMapConversion.Northings
     S = IfcMapConversion.Scale
@@ -569,113 +574,112 @@ def visualize(filename):
     B = math.sin(Rotation_solution)        
     #target_epsg = "EPSG:"+str(session.get('target_epsg'))
     target_epsg = "EPSG:"+ target[1]
-    fnjson = re.sub('\.ifc$','.json', filename)
-    fncityjson = re.sub('\.ifc$','.city.json', filename)
+    # fnjson = re.sub('\.ifc$','.json', filename)
+    # fncityjson = re.sub('\.ifc$','.city.json', filename)
     transformer2 = Transformer.from_crs(target_epsg,"EPSG:4326")
-    path0 = repr(os.path.join(os.getcwd(), 'envelop', fncityjson)).replace("\\\\","/").strip("'")
-    #create JSON file
-    json_dict = {
-    "Filepaths": {
-        "Input" : ['./uploads/'+filename],
-        "Output" : path0
-    },
-    "voxelSize" : {
-        "xy" : 1,
-        "z" : 1
-    },
-    "Generate footprint": 0,
-    "Generate roof outline": 1,
-    "Output report" : 1,
-    "LoD output" : [0.2]
-    }
+    # path0 = repr(os.path.join(os.getcwd(), 'envelop', fncityjson)).replace("\\\\","/").strip("'")
+    # #create JSON file
+    # json_dict = {
+    # "Filepaths": {
+    #     "Input" : ['./uploads/'+filename],
+    #     "Output" : path0
+    # },
+    # "voxelSize" : {
+    #     "xy" : 1,
+    #     "z" : 1
+    # },
+    # "Generate footprint": 0,
+    # "Generate roof outline": 1,
+    # "Output report" : 1,
+    # "LoD output" : [0.2]
+    # }
 
 
     
-    json_file = open(os.path.join('envelop', fnjson), 'w+')
-    json_file.write(json.dumps(json_dict, indent=2))
-    json_file.close()
+    # json_file = open(os.path.join('envelop', fnjson), 'w+')
+    # json_file.write(json.dumps(json_dict, indent=2))
+    # json_file.close()
 
-    # Construct the full file paths relative to the current working directory
-    if ifc_file.schema[:4] == 'IFC4':
-        extractor = 'Env04.exe'
-    else:
-        extractor = 'Env02X3.exe'
-    
-    path1 = os.path.join(os.getcwd(), 'envelop', extractor)
-    path2 = os.path.join(os.getcwd(), 'envelop', fnjson)
-    result = subprocess.Popen([path1 , path2])
-    while result.poll() is None:    time.sleep(0.5)
-    if result.returncode == 0:
-        print("\r", "Success")
-
-    # Load the JSON data from the file
-    # fncjson = re.sub('\.json$','.city.json', fnjson)
-    with open(os.path.join('envelop', fncityjson), 'r') as cityjson_file:
-        data = json.load(cityjson_file)
-
-    # Extract the CityObjects dictionary
-    city_objects = data.get("CityObjects", {})
-    gpoly = []
-    # Iterate through the CityObjects
-    for object_id, city_object in city_objects.items():
-        attributes = city_object.get("attributes", {})
-        geometry = city_object.get("geometry", [])
-        coordinates = data.get("vertices", [])
-
-        # Check if this object has the "RoofSurface" type
-        for geom in geometry:
-            semantics = geom.get("semantics", {})
-            surfaces = semantics.get("surfaces", [])
-
-            if any(surface.get("type") == "RoofSurface" for surface in surfaces):
-                print(f"Object ID: {object_id}")
-                print(f"Coordinates of RoofSurface:")
-                for boundary in geom.get("boundaries", []):
-                    poly = []
-                    for b in boundary:
-                        pg = []
-                        for coordinate_id in b:
-                            if 0 <= coordinate_id < len(coordinates):
-                                x,y,z = coordinates[coordinate_id]
-                                po = (x/mag),(y/mag),(z/mag)
-                                xx = S * po[0]  + E
-                                yy = S * po[1] + N
-                                zz = S * po[2] + ortz
-                                x2,y2 = transformer2.transform(xx,yy)
-                                vert = y2,x2
-                                #vert = xx,yy,zz
-                                pg.append(vert)
-                        pg.append(pg[0])
-                        poly.append(pg)
-                    gpoly.append(poly)
-
-    geo_json_dict = {
-        "type": "FeatureCollection",
-        "features": []
-        }
-    for pol in gpoly:
-        if len(pol) == 1:
-                polygon = Polygon(pol[0])
-        else:
-            polygon = Polygon(pol[0],holes = [pol[1]])
-        feature = {
-            'type': 'Feature',
-            'properties': {},
-            'geometry': mapping(polygon)
-        }
-        geo_json_dict["features"].append(feature)
-    fn_ = re.sub('\.ifc$','.geojson', filename)
-    geo_json_file = open(os.path.join('./static/', fn_), 'w+')
-    geo_json_file.write(json.dumps(geo_json_dict, indent=2))
-    geo_json_file.close()
-    filename = "."+ geo_json_file.name
-    # if Refl:
-    #     Latitude =session.get('Latitude')
-    #     Longitude =session.get('Longitude')
+    # # Construct the full file paths relative to the current working directory
+    # if ifc_file.schema[:4] == 'IFC4':
+    #     extractor = 'Env04.exe'
     # else:
-    Latitude =gpoly[0][0][0][1]
-    Longitude =gpoly[0][0][0][0]
-    return render_template('view.html', filename=filename, Latitude=Latitude, Longitude=Longitude)
+    #     extractor = 'Env02X3.exe'
+    
+    # path1 = os.path.join(os.getcwd(), 'envelop', extractor)
+    # path2 = os.path.join(os.getcwd(), 'envelop', fnjson)
+    # result = subprocess.Popen([path1 , path2])
+    # while result.poll() is None:    time.sleep(0.5)
+    # if result.returncode == 0:
+    #     print("\r", "Success")
+
+    # # Load the JSON data from the file
+    # # fncjson = re.sub('\.json$','.city.json', fnjson)
+    # with open(os.path.join('envelop', fncityjson), 'r') as cityjson_file:
+    #     data = json.load(cityjson_file)
+
+    # # Extract the CityObjects dictionary
+    # city_objects = data.get("CityObjects", {})
+    # gpoly = []
+    # # Iterate through the CityObjects
+    # for object_id, city_object in city_objects.items():
+    #     attributes = city_object.get("attributes", {})
+    #     geometry = city_object.get("geometry", [])
+    #     coordinates = data.get("vertices", [])
+
+    #     # Check if this object has the "RoofSurface" type
+    #     for geom in geometry:
+    #         semantics = geom.get("semantics", {})
+    #         surfaces = semantics.get("surfaces", [])
+
+    #         if any(surface.get("type") == "RoofSurface" for surface in surfaces):
+    #             print(f"Object ID: {object_id}")
+    #             print(f"Coordinates of RoofSurface:")
+    #             for boundary in geom.get("boundaries", []):
+    #                 poly = []
+    #                 for b in boundary:
+    #                     pg = []
+    #                     for coordinate_id in b:
+    #                         if 0 <= coordinate_id < len(coordinates):
+    #                             x,y,z = coordinates[coordinate_id]
+    #                             po = (x/mag),(y/mag),(z/mag)
+    xx = S * org[0]* A - S * org[1]*B + E
+    yy = S * org[1]* A + S * org[1]*B + N
+    zz = S * org[2] + ortz
+    x2,y2 = transformer2.transform(xx,yy)
+    #                             #vert = xx,yy,zz
+    #                             pg.append(vert)
+    #                     pg.append(pg[0])
+    #                     poly.append(pg)
+    #                 gpoly.append(poly)
+
+    # geo_json_dict = {
+    #     "type": "FeatureCollection",
+    #     "features": []
+    #     }
+    # for pol in gpoly:
+    #     if len(pol) == 1:
+    #             polygon = Polygon(pol[0])
+    #     else:
+    #         polygon = Polygon(pol[0],holes = [pol[1]])
+    #     feature = {
+    #         'type': 'Feature',
+    #         'properties': {},
+    #         'geometry': mapping(polygon)
+    #     }
+    #     geo_json_dict["features"].append(feature)
+    # fn_ = re.sub('\.ifc$','.geojson', filename)
+    # _file = open(os.path.join('./static/', filename), 'w+')
+    # geo_json_file.write(json.dumps(geo_json_dict, indent=2))
+    # geo_json_file.close()
+    # _filename = "."+ _file.name
+    # if Refl:
+    Latitude =x2
+    Longitude =y2
+    # else:
+    # Latitude =gpoly[0][0][0][1]
+    # Longitude =gpoly[0][0][0][0]
+    return render_template('view3.html', filename=filename, Latitude=Latitude, Longitude=Longitude, Rotate=Rotation_solution, origin = org)
 
 @app.route('/download/<filename>', methods=['GET'])
 def download(filename):
@@ -698,6 +702,13 @@ def download(filename):
     else:
         # Return a 404 error if the file doesn't exist
         return 'File not found', 404
-    
+@app.route('/templates/<path:filename>')
+def temp(filename):
+    return send_from_directory('templates', filename)
+   
+@app.route('/uploads/<path:filename>')
+def ups(filename):
+    return send_from_directory('uploads', filename)
+   
 if __name__ == '__main__':
     app.run(debug=True)
