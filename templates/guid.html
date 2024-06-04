@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IfcGref User Guide</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            background-color: #f8f9fa;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            flex-direction: column;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 900px;
+            width: 100%;
+            position: relative;
+        }
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logo {
+            max-height: 60px;
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 28px;
+            color: #007bff;
+        }
+        h2 {
+            margin-top: 50px;
+            margin-bottom: 10px;
+            font-size: 22px;
+            color: #0056b3;
+        }
+        h3 {
+            margin-top: 40px;
+            font-size: 20px;
+            color: #333;
+        }
+        p {
+            font-size: 16px;
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        li {
+            font-size: 16px;
+            color: #555;
+            line-height: 1.6;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .center-image {
+            display: flex;           /* Use Flexbox for layout */
+            justify-content: center; /* Center horizontally */
+            margin-bottom: 50px;
+
+        }
+        .center-image img {
+            max-width: 100%;         /* Ensure image does not exceed container width */
+            width: 600px;            /* Resize image to 600px width */
+            height: auto;            /* Maintain aspect ratio */
+        }
+        .btn {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 10px 0;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .info-box {
+            background-color: #f8f7f7;
+            border-left: 5px solid #007bff;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .box {
+            display: inline-block;
+            margin: 10px;
+            padding: 20px;
+            width: 150px;
+            height: 75px;
+            cursor: pointer;
+        }
+        .box img {
+            display: block;
+            width: 100%;
+            height: auto;
+            margin: 0 auto;
+        }
+        .loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+        .loader img {
+            width: 100px;
+            height: 100px;
+            animation: fadeInOut 2s infinite;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="../static/images/logo1.png" alt="Logo 1" class="logo">
+        <a href="https://3d.bk.tudelft.nl/"><img src="../static/images/logo2.png" alt="Logo 2" class="logo"></a>
+    </div>
+    <div class="container">
+        <h1>User Guide for IfcGref</h1>
+        <p>Welcome to IfcGref! This guide will help you navigate and use the tool effectively to upload, georeference, and visualize IFC files.</p>
+        
+        <h2>Table of Contents</h2>
+        <ul>
+            <li><a href="#introduction">Introduction</a></li>
+            <li><a href="#using-the-tool">Using the Tool</a>
+                <ul>
+                    <li><a href="#uploading-an-ifc-file">Uploading an IFC File</a></li>
+                    <li><a href="#converting-the-crs">Converting the CRS</a></li>
+                    <li><a href="#georeference-options">Georeferencing Options</a></li>
+                    <li><a href="#surveyed-points">Adding Survey Points</a></li>
+                    <li><a href="#viewing-results">Viewing Results</a></li>
+                    <li><a href="#visualizing-on-map">Visualizing on Map</a></li>
+                    <li><a href="#downloading-the-converted-file">Downloading the Georeferenced File</a></li>
+                </ul>
+            </li>
+            <li><a href="#handling-already-georeferenced-files">Handling Already Georeferenced Files</a></li>
+            <li><a href="#troubleshooting">Troubleshooting</a></li>
+            <li><a href="#contact-and-support">Contact and Support</a></li>
+        </ul>
+        
+        <h2 id="introduction">Introduction</h2>
+        <p>This Flask-based tool, accessible at provides a comprehensive solution for designers, engineers, and software developers for georeferencing. IfcGref supports georeferencing operations starting from IFC 4, ensuring backward compatibility with earlier versions. The tool utilizes IfcMapConversion, incorporating attributes like SourceCRS, TargetCRS, and other key parameters to enable accurate coordinate transformations.  This guide will walk you through each step of the process.</p>
+        
+        <h2 id="using-the-tool">Using the Tool</h2>
+        
+        <h3 id="uploading-an-ifc-file">Uploading an IFC File</h3>
+        <p><b>1. Navigate to the Upload Page</b><br>
+           Go to the home page of IfcGref where you will see the option to upload an IFC file.</p>
+        
+        <p><b>2. Upload Your File</b><br>
+            Drag and drop your `.ifc` file into the designated area or click on the upload area. Once the file is selected, it will automatically start uploading.</p>
+            <div class="center-image">
+                <img src="../static/images/upload.png" alt="Upload Image">
+            </div>
+        
+        <p><b>3. Wait for the Upload to Complete</b><br>
+           Once the upload is successful, you will be redirected to the CRS conversion page.</p>
+        
+        <h3 id="converting-the-crs">Converting the CRS</h3>
+        <p><b>1. Enter the EPSG Code</b><br>
+           On the CRS Conversion page, enter the EPSG code for the target CRS into the input field. EPSG codes are standard codes used to identify specific coordinate systems. IfcGref currently supports only Projected CRSs for the target.<br> Drag and drop your `.ifc` file into the designated area or click on the upload area. Once the file is selected, it will automatically start uploading.</p>
+           <div class="center-image">
+               <img src="../static/images/conv.png" alt="Conv Image">
+           </div>
+        <p><b>2. Start the Conversion</b><br>
+           Click the "Convert" button to set the EPSG code. You will be taken to a different page that shows BIM and geographical information exiting in the IFC.</p>
+
+        <h3 id="georeference-options">Georeferencing Options</h3>
+        <p>In this step, you need to select how to georeference your IFC file and add survey points if necessary. The following options are available:</p>
+
+        <div class="info-box">
+            <h3>1. Use existing information</h3>
+            <div class="box">
+                <img src="../static/images/way1.png" alt="Option 1">
+            </div><br>
+            <p>In this option your IFC file wil be georeferenced based on the geo information that is already existing in the file such as longtitude, latitude, and reference elevation. By choosing this option, it is assumed that the model is scaled based on unit conversion between source and target CRS and rotation is derived from TrueNorth direction (if availalble)</p><br>
+        </p>
+        </div>
+
+        <div class="info-box">
+            <h3>2. Add surveyed points to existing information</h3>
+            <div class="box">
+                <img src="../static/images/way2.png" alt="Option 2">
+            </div><br>
+            <p>While exisitng information can compute translation values in IFC files, using additional survey points allows for the calculation of rotation and scale, improving accuracy. The rotation angle can be inferred from the True North direction in BIM models, but discrepancies with the Geographic Coordinate System (GCS) and Projected Coordinate System (PCS) may occur due to map distortions. Therefore, it is advisable to use multiple survey points. The scale factor requires at least two georeferenced points and cannot be determined from the BIM model alone. More surveyed points enhance the accuracy and thoroughness of optimizing conversion values, leading to increased accuracy.</p><br>
+        </p>
+        </div>
+
+        <div class="info-box">
+            <h3>3. Add surveyed points and ignore existing information</h3>
+            <div class="box">
+                <img src="../static/images/way3.png" alt="Option 3">
+            </div><br>
+            <p>In cases that the existing information is unreliable or the user chooses not to use it, this option to ignores the current data and georeference solely based on the added surveyed points and their relative coordinates in BIM. This allows for a fresh and accurate georeferencing process using only the newly provided survey points.</p><br>
+        </p>
+        </div>
+
+        <h3 id="surveyed-points">Adding Survey Points</h3>
+        Remember to use a comma as the decimal separator. You can copy and paste values from tables in Excel and Google Docs. Ensure that the units for BIM and Map match their original units, as indicated in the header of the input table. Once the table is complete click on the submit button.</p>
+        <div class="center-image">
+            <img src="../static/images/table.png" alt="Table Image">
+        </div>
+        <h3 id="viewing-results">Viewing Results</h3>
+        <p><b>1. View Conversion Results</b><br>
+           After the calculation is complete, you will be redirected to the results page. The page will display the georeferencing data in a table format.</p>
+        
+        <p><b>2. Check for Errors</b><br>
+           If any errors occurred during the conversion, they will be displayed on this page.</p>
+        
+        <h3 id="visualizing-on-map">Visualizing on Map</h3>
+        <p><b>1. Visualize Data on Map</b><br>
+           On the results page, click the "Show on Map" button. You will be redirected to a map view where the converted data is visualized.</p>
+        
+        <p><b>2. Interact with the Map</b><br>
+           Use the map controls to zoom and pan to inspect the converted data.</p>
+        
+        <h3 id="downloading-the-converted-file">Downloading the Georeferenced File</h3>
+        <p>If the conversion is successful, you will see a "Download" button on the results page. Click the button to download the converted IFC file to your device. "_georeferenced" will be appended to the original file name to ensure it is distinct and easily searchable.</p>
+        
+        <h2 id="handling-already-georeferenced-files">Handling Already Georeferenced Files</h2>
+        <p>If the uploaded IFC file is georeferenced (IfcMapConversion is present),  IfcMapConversion and IfcProjectedCRS values will be displayed. You can visualize the IFC file on the map by clicking the "Show on Map" button.</p>
+        
+        
+        <h2 id="troubleshooting">Troubleshooting</h2>
+        <p>If you encounter any issues while using IfcGref, here are some common problems and their solutions:</p>
+        
+        <p><b>File Upload Errors</b><br>
+           Ensure the file format is `.ifc`. Check your internet connection. If there is no progress after a while, try reloading the page and upload the file again.</p>
+        
+        <p><b>Conversion Errors</b><br>
+            Ensure EPSG code corresponds to a Projected CRS. Review the error message for specific details and address any issues noted.</p>
+        
+        <p><b>Visualization Issues</b><br>
+            Ensure your browser connects to internet for displaying maps. Refresh the page if the map does not load properly.</p>
+        
+        <h2 id="contact-and-support">Contact and Support</h2>
+        <p>For further assistance, please contact <a href="mailto:S.Hakim@tudelft.nl">S.Hakim@tudelft.nl</a> or visit our <a href="https://3d.bk.tudelft.nl/">web page</a>.</p>
+        
+        <p>Thank you for using IfcGref! We hope this guide has helped you understand how to use the tool effectively. If you have any feedback or suggestions, feel free to reach out to us.</p>
+    </div>
+</body>
+</html>
