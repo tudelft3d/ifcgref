@@ -8,11 +8,23 @@
     <style>
         body { margin: 0; padding: 0; }
         html, body, #map { height: 100%; }
+        /* #changeMapButton {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            padding: 10px;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            cursor: pointer;
+        } */
     </style>
 </head>
 <body>
 
 <div id="map"></div>
+<!-- <button id="changeMapButton">Change Map</button> -->
 
 <script src='https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.js'></script>
 <link rel='stylesheet' href='https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.css' />
@@ -35,13 +47,17 @@
     // var Long = 4.369247914020436;
     // var fn = 'bouwkunde_georeferenced_4.ifc';
     // var Rot = 0.017;
-    // var sc =1;
+    var sc =1;
+    // var OGx = -39040.798605970114;
+    // var OGy = 151898.13112744875;
+    var OGx = '{{ Gx }}';
+    var OGy = '{{ Gy }}';
     var org = [0,0,0];
     var Lat = '{{ Latitude }}';
     var Long = '{{ Longitude }}';
     var fn = '{{filename}}';
     var Rot = '{{Rotate}}';
-    var sc = '{{Scale}}';
+    // var sc = '{{Scale}}';
     // var org = '{{origin}}';
 
     import * as THREE from 'three';
@@ -105,6 +121,7 @@
         await ifcLoader.ifcManager.applyWebIfcConfig({ USE_FAST_BOOLS: true });
         const filePath = '/uploads/' + fn;
         ifcLoader.load(filePath, function (model) {
+            model.mesh.position.set(-OGx, 0, OGy);
             scene.add(model.mesh);
             render();
         });
@@ -172,6 +189,12 @@
     }
 
     init();
+    // document.getElementById('changeMapButton').addEventListener('click', function() {
+    //     // map.setStyle('https://api.maptiler.com/maps/streets-v2/style.json?key=0WhPYrwttynpLXQDYYip');
+    //     // if (customLayer) {
+    //     // map.removeLayer(customLayer.id);
+    //     // init();
+    // }
 
 </script>
 </body>
