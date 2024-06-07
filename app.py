@@ -647,9 +647,22 @@ def visualize(filename):
     #                         if 0 <= coordinate_id < len(coordinates):
     #                             x,y,z = coordinates[coordinate_id]
     #                             po = (x/mag),(y/mag),(z/mag)
-    xx = S * org[0]* A - S * org[1]*B + E
-    yy = S * org[1]* A + S * org[1]*B + N
-    zz = S * org[2] + ortz
+    scaleError = session.get('scaleError')
+    if scaleError:
+        saver = S
+        S = session.get('coeff')
+        session.pop('scaleError', None)  # Corrected line
+        E=E/S
+        N = N/S
+        ortz= ortz/S
+        xx = S * org[0]* A - S * org[1]*B + E
+        yy = S * org[1]* A + S * org[1]*B + N
+        z = S * org[2] + ortz
+        S = saver
+    else:
+        xx = S * org[0]* A - S * org[1]*B + E
+        yy = S * org[1]* A + S * org[1]*B + N
+        zz = S * org[2] + ortz
     x2,y2 = transformer2.transform(xx,yy)
     #                             #vert = xx,yy,zz
     #                             pg.append(vert)
@@ -683,7 +696,7 @@ def visualize(filename):
     # else:
     # Latitude =gpoly[0][0][0][1]
     # Longitude =gpoly[0][0][0][0]
-    return render_template('view3D.html', filename=filename, Latitude=Latitude, Longitude=Longitude, Rotate=Rotation_solution, origin = org)
+    return render_template('view3D.html', filename=filename, Latitude=Latitude, Longitude=Longitude, Rotate=Rotation_solution, origin = org, Scale = S)
 
 @app.route('/download/<filename>', methods=['GET'])
 def download(filename):

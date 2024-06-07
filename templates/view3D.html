@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - IFCLoader with Map</title>
+    <title>IfcGref Viewer</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
     <link type="text/css" rel="stylesheet" href="/templates/main.css" />
@@ -33,14 +33,16 @@
 <script type="module">
     // var Lat = 52.00521088030612;
     // var Long = 4.369247914020436;
-    // var fn = 'bouwkunde.ifc';
+    // var fn = 'bouwkunde_georeferenced_4.ifc';
     // var Rot = 0.017;
-    var org = [0,0,0]
+    // var sc =1;
+    var org = [0,0,0];
     var Lat = '{{ Latitude }}';
     var Long = '{{ Longitude }}';
     var fn = '{{filename}}';
     var Rot = '{{Rotate}}';
-    //var org = '{{origin}}'
+    var sc = '{{Scale}}';
+    // var org = '{{origin}}';
 
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -54,6 +56,7 @@
         // Initialize Map
         map = new maplibregl.Map({
             container: 'map',
+            // style: 'https://api.maptiler.com/maps/streets-v2/style.json?key=0WhPYrwttynpLXQDYYip',
             style: 'https://api.maptiler.com/maps/openstreetmap/style.json?key=0WhPYrwttynpLXQDYYip',
             zoom: 18,
             center: [Long, Lat],
@@ -76,12 +79,12 @@
             rotateX: modelRotate[0],
             rotateY: modelRotate[1],
             rotateZ: modelRotate[2],
-            scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits()
+            scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits()*sc
         };
 
         // Scene
         scene = new THREE.Scene();
-        //scene.background = new THREE.Color(0x8cc7de);
+        // scene.background = new THREE.Color(0x8cc7de);
 
         // Lights
         const directionalLight1 = new THREE.DirectionalLight(0xffeeff, 2.5);
@@ -138,6 +141,9 @@
                     .multiply(rotationZ);
 
                 this.camera.projectionMatrix = m.multiply(l);
+                const clippingPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+                this.renderer.clippingPlanes = [clippingPlane];
+                this.renderer.localClippingEnabled = true;
                 this.renderer.resetState();
                 this.renderer.render(this.scene, this.camera);
                 this.map.triggerRepaint();
