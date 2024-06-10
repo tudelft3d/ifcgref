@@ -234,6 +234,7 @@
             </form>
         {% else %}
             <form method="POST" onsubmit="showLoader()" id="numForm" style="display: none;">
+                <input type="hidden" id="boxNumber" name="boxNumber">
                 <label for="Num">Enter the number of extra surveyed points:</label>
                 <input type="text" id="Num" name="Num">
                 <input type="submit" value="Set" class="btn">
@@ -267,22 +268,22 @@
 
         document.getElementById('box1').addEventListener('click', function() {
             document.getElementById('numForm').style.display = 'none';
+            document.getElementById('boxNumber').value = '1';
             document.getElementById('Num').value = '0';
             showLoader();
             document.getElementById('numForm').submit();
-            document.cookie = "Refl=True"; // Set a cookie with Refl value
         });
 
         document.getElementById('box2').addEventListener('click', function() {
             hideBoxes('box2');
+            document.getElementById('boxNumber').value = '2';
             document.getElementById('numForm').style.display = 'block';
-            document.cookie = "Refl=True"; // Set a cookie with Refl value
         });
 
         document.getElementById('box3').addEventListener('click', function() {
             hideBoxes('box3');
+            document.getElementById('boxNumber').value = '3';
             document.getElementById('numForm').style.display = 'block';
-            document.cookie = "Refl="; // Set a cookie with Refl value
         });
     </script>
 </body>
