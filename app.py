@@ -316,13 +316,12 @@ def survey_points(filename):
     messages, error = infoExt(filename, epsg_code)
     ifcunit = session.get('ifcunit')
     mapunit = session.get('mapunit')
-    if request.method != 'POST':
-        Refl = session.get('Refl')
-    else:
-            Refl = bool(request.cookies.get('Ref'))
-            box_number = request.form.get('boxNumber')
-            if box_number == '3':
-                session['Refl'] = False
+    Refl = session.get('Refl')
+    if request.method == 'POST':
+        box_number = request.form.get('boxNumber')
+        if box_number == '3':
+            session['Refl'] = False
+            Refl = False
     if Refl:
         messages , error = local_trans(filename,messages)
         Num = []
