@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Upload</title>
+    <title>IfcGref</title>
+    <link rel="icon" type="image/x-icon" href="../static/images/flavicon.png">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -78,6 +79,30 @@
             50% { opacity: 1; }
             100% { opacity: 0; }
         }
+        .box {
+            
+            display: inline-block;
+            margin: 10px;
+            padding: 20px;
+            width: 50px;
+            height: 50px;
+            border: 0px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            overflow: hidden; /* Ensure the image does not exceed the box */
+        }
+        .box img {
+            display: block;
+            width: 30px;
+            height: auto;
+            margin: 0 auto;
+        }
+        .info-text {
+            margin-top: 10px;
+            font-size: 10px;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -93,9 +118,9 @@
         <p class="error-message">{{ error_message }}</p>
         {% endif %}
         
-        <form method="POST" action="/upload" enctype="multipart/form-data" id="upload-form" onsubmit="showLoader()">
+        <form method="POST" action="/upload" enctype="multipart/form-data" id="upload-form">
             <div class="drop-zone" id="drop-zone">
-                <p>Drag & drop your .ifc file here, or <span class="highlight">click</span> to select a file</p>
+                <p>Drag & drop your .ifc file here, or <span class="highlight">click</span> to select it.</p>
                 <input type="file" name="file" id="file-input">
             </div>
         </form>
@@ -103,16 +128,15 @@
         <div class="loader" id="loader">
             <img src="{{ url_for('static', filename='images/loading.png') }}" alt="Loading...">
         </div>
+
+
     </div>
 
     <script>
-        function showLoader() {
-            document.getElementById('loader').style.display = 'block';
-        }
-
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
         const form = document.getElementById('upload-form');
+        const loader = document.getElementById('loader');
 
         dropZone.addEventListener('click', () => {
             fileInput.click();
@@ -120,6 +144,7 @@
 
         fileInput.addEventListener('change', () => {
             if (fileInput.files.length) {
+                showLoader();
                 form.submit();
             }
         });
@@ -139,11 +164,23 @@
             const files = e.dataTransfer.files;
             if (files.length) {
                 fileInput.files = files;
+                showLoader();
                 form.submit();
             }
         });
+
+        form.addEventListener('submit', (e) => {
+            showLoader();
+        });
+
+        function showLoader() {
+            loader.style.display = 'block';
+        }
     </script>
-        <p><a href="/templates/guid.html">User Guid</a></p>
-    
+            <!-- User Guide Box -->
+            <div class="box" onclick="window.location.href='/templates/guid.html'">
+                <img src="../static/images/info.png" alt="User Guide Image">
+                <div class="info-text">User Guide</div>
+            </div>
 </body>
 </html>
