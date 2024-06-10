@@ -574,10 +574,12 @@ def visualize(filename):
                 xx = xx+Gx
                 yy = yy+Gy
                 break
+    eff = session.get('coeff')
+    Snew = S/eff
     x2,y2 = transformer2.transform(xx,yy)
     Latitude =x2
     Longitude =y2
-    return render_template('view3D.html', filename=filename, Latitude=Latitude, Longitude=Longitude, Rotate=Rotation_solution, origin = org, Scale = S, Gx=Gx, Gy=Gy)
+    return render_template('view3D.html', filename=filename, Latitude=Latitude, Longitude=Longitude, Rotate=Rotation_solution, origin = org, Scale = Snew, Gx=Gx, Gy=Gy)
 
 @app.route('/download/<filename>', methods=['GET'])
 def download(filename):
