@@ -70,6 +70,19 @@ def infoExt(filename , epsgCode):
         x0= (float(RLat[0]) + float(RLat[1])/60 + float(RLat[2]+RLat[3]/1000000)/(60*60))
         y0= (float(RLon[0]) + float(RLon[1])/60 + float(RLon[2]+RLon[3]/1000000)/(60*60))
         session['Refl'] = True
+        if hasattr(ifc_file.by_type("IfcSite")[0], "ObjectPlacement") and ifc_file.by_type("IfcSite")[0].ObjectPlacement.is_a("IfcLocalPlacement"):
+            local_placement = ifc_file.by_type("IfcSite")[0].ObjectPlacement.RelativePlacement
+                # Check if the local placement is an IfcAxis2Placement3D
+            if local_placement.is_a("IfcAxis2Placement3D"):
+                local_origin = local_placement.Location.Coordinates
+                bx,by,bz= local_origin
+                messages.append(('IFC Local Origin', local_origin))
+            else:
+                    errorMessage = "Local placement is not IfcAxis2Placement3D."
+                    return messages, errorMessage
+        else:
+                errorMessage = "IfcSite does not have a local placement."
+                return messages, errorMessage
     else:
         session['Refl'] = False
         messages.append(('RefLatitude or RefLongitude', 'Not available'))
@@ -81,19 +94,7 @@ def infoExt(filename , epsgCode):
 
     bx,by,bz = 0,0,0
     # Find local origin
-    if hasattr(ifc_file.by_type("IfcSite")[0], "ObjectPlacement") and ifc_file.by_type("IfcSite")[0].ObjectPlacement.is_a("IfcLocalPlacement"):
-        local_placement = ifc_file.by_type("IfcSite")[0].ObjectPlacement.RelativePlacement
-            # Check if the local placement is an IfcAxis2Placement3D
-        if local_placement.is_a("IfcAxis2Placement3D"):
-            local_origin = local_placement.Location.Coordinates
-            bx,by,bz= local_origin
-            messages.append(('IFC Local Origin', local_origin))
-        else:
-                errorMessage = "Local placement is not IfcAxis2Placement3D."
-                return messages, errorMessage
-    else:
-            errorMessage = "IfcSite does not have a local placement."
-            return messages, errorMessage
+
                 
     # Target CRS unit name
     try: 
@@ -318,8 +319,10 @@ def survey_points(filename):
     if request.method != 'POST':
         Refl = session.get('Refl')
     else:
-            Refl = bool(request.cookies.get('Refl'))
-            session['Refl'] = Refl
+            Refl = bool(request.cookies.get('Ref'))
+            box_number = request.form.get('boxNumber')
+            if box_number == '3':
+                session['Refl'] = False
     if Refl:
         messages , error = local_trans(filename,messages)
         Num = []
