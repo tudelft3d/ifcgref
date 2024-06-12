@@ -1,6 +1,7 @@
+
 # IfcGref Web-Based Application
 
-![ifcgref00 (1)](https://github.com/tudelft3d/ifcgref/assets/50393714/378e8d64-378b-485b-aefe-73afe0ecd943)
+![ifcgref-release](https://github.com/tudelft3d/ifcgref/assets/50393714/e335cd23-d063-4f86-8cdf-d9898b6a955a)
 
 
 ## Overview
