@@ -133,11 +133,27 @@
             50% { opacity: 1; }
             100% { opacity: 0; }
         }
+        .back-arrow {
+        margin-top: 30px;
+        text-align: center;
+        }
+        .back-arrow img {
+            width: 40px; /* Adjust size as needed */
+            height: auto;
+        }
+        .back-arrow a {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 18px;
+        }
+        .back-arrow a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <img src="../static/images/logo1.png" alt="Logo 1" class="logo">
+        <a href="https://ifcgref.bk.tudelft.nl/"><img src="../static/images/logo1.png" alt="Logo 1" class="logo"></a>
         <a href="https://3d.bk.tudelft.nl/"><img src="../static/images/logo2.png" alt="Logo 2" class="logo"></a>
     </div>
     <div class="container">
@@ -262,6 +278,12 @@
         <p>For further assistance, please contact <a href="mailto:S.Hakim@tudelft.nl">S.Hakim@tudelft.nl</a> or visit our <a href="https://3d.bk.tudelft.nl/">web page</a>.</p>
         
         <p>Thank you for using IfcGref! We hope this guide has helped you understand how to use the tool effectively. If you have any feedback or suggestions, feel free to reach out to us.</p>
+    </div>
+    <div class="back-arrow">
+        <a href="https://ifcgref.bk.tudelft.nl/">
+            <img src="../static/images/back.png" alt="Back Arrow">
+        </a>
+        <p>Back to upload page</p>
     </div>
 </body>
 </html>
