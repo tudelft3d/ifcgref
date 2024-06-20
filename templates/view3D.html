@@ -219,7 +219,7 @@
         currentStyleIndex = (currentStyleIndex + 1) % styles.length;
         map.setStyle(styles[currentStyleIndex]);
         init();
-        // renderer.render(scene, customLayer.camera);
+        renderer.render(scene, customLayer.camera);
     }
     init();
     document.getElementById('changeMapButton').addEventListener('click', toggleMapStyle);
