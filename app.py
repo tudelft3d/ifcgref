@@ -551,21 +551,24 @@ def visualize(filename):
     transformer2 = Transformer.from_crs(target_epsg,"EPSG:4326")
     scaleError = session.get('scaleError')
     Gx , Gy = 0 , 0
+    eff = session.get('coeff')
     if scaleError:
         saver = S
-        S = session.get('coeff')
+        S = eff
         session.pop('scaleError', None)  # Corrected line
-        E=E/S
-        N = N/S
-        ortz= ortz/S
+        E=E*S
+        N = N*S
+        ortz= ortz*S
         xx = S * org[0]* A - S * org[1]*B + E
         yy = S * org[1]* A + S * org[1]*B + N
         z = S * org[2] + ortz
         S = saver
+        Snew = S
     else:
         xx = S * org[0]* A - S * org[1]*B + E
         yy = S * org[1]* A + S * org[1]*B + N
         zz = S * org[2] + ortz
+        Snew = S/eff
     if xx==0 and yy==0:
         products = ifc_file.by_type('IfcProduct')
         for product in products:
@@ -576,8 +579,6 @@ def visualize(filename):
                 xx = xx+Gx
                 yy = yy+Gy
                 break
-    eff = session.get('coeff')
-    Snew = S/eff
     x2,y2 = transformer2.transform(xx,yy)
     Latitude =x2
     Longitude =y2
