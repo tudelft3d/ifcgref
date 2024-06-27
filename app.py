@@ -569,16 +569,16 @@ def visualize(filename):
         yy = S * org[1]* A + S * org[1]*B + N
         zz = S * org[2] + ortz
         Snew = S/eff
-    if xx==0 and yy==0:
-        products = ifc_file.by_type('IfcProduct')
-        for product in products:
-            if product.Representation:
-                placement = product.ObjectPlacement
-                lpMAat = ifcopenshell.util.placement.get_local_placement(placement)
-                Gx , Gy = lpMAat[0][3],lpMAat[1][3]
-                xx = xx+Gx
-                yy = yy+Gy
-                break
+    # if xx==0 and yy==0:
+    products = ifc_file.by_type('IfcProduct')
+    for product in products:
+        if product.Representation:
+            placement = product.ObjectPlacement
+            lpMAat = ifcopenshell.util.placement.get_local_placement(placement)
+            Gx , Gy = lpMAat[0][3],lpMAat[1][3]
+            xx = xx+Gx
+            yy = yy+Gy
+            break
     x2,y2 = transformer2.transform(xx,yy)
     Latitude =x2
     Longitude =y2
