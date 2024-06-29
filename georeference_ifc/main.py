@@ -120,7 +120,7 @@ def set_mapconversion_crs_ifc2x3(ifc_file: ifcopenshell.file,
     crs_template = [t for t in ifc_template.by_type('IfcPropertySetTemplate') if t.Name == 'EPset_ProjectedCRS'][0]
 
     site = ifc_file.by_type("IfcSite")[0]  # we assume that the IfcProject only has one IfcSite entity.
-    pset0 = ifcopenshell.api.run("pset.add_pset", ifc_file, product=site, name="ePSet_MapConversion")
+    pset0 = ifcopenshell.api.run("pset.add_pset", ifc_file, product=site, name="ePset_MapConversion")
     ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset0, properties={'TargetCRS':target_crs_epsg_code,
                                                                             'Eastings': eastings,
                                                                             'Northings': northings,
@@ -129,7 +129,7 @@ def set_mapconversion_crs_ifc2x3(ifc_file: ifcopenshell.file,
                                                                             'XAxisOrdinate': x_axis_ordinate,
                                                                             'Scale': scale},
                          pset_template=map_conversion_template)
-    pset1 = ifcopenshell.api.run("pset.add_pset", ifc_file, product=site, name="ePSet_ProjectedCRS")
+    pset1 = ifcopenshell.api.run("pset.add_pset", ifc_file, product=site, name="ePset_ProjectedCRS")
     ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset1, properties={'Name': target_crs_epsg_code},
                          pset_template=crs_template)
 
@@ -148,11 +148,18 @@ def get_mapconversion_crs(ifc_file: ifcopenshell.file) -> (object, object):
     if ifc_file.schema == 'IFC2X3':
         site = ifc_file.by_type("IfcSite")[0]
         psets = get_psets(site)
+        if 'ePset_MapConversion' in psets.keys() and 'ePset_ProjectedCRS' in psets.keys():
+            # Move the last property to the first place
+            mapconversion_properties = OrderedDict(list(psets['ePset_MapConversion'].items())[-1:] + list(psets['ePset_MapConversion'].items())[:-1])
+            crs_properties = OrderedDict(list(psets['ePset_ProjectedCRS'].items())[-1:] + list(psets['ePset_ProjectedCRS'].items())[:-1])
+            return Struct(**mapconversion_properties), Struct(**crs_properties)
+        
         if 'ePSet_MapConversion' in psets.keys() and 'ePSet_ProjectedCRS' in psets.keys():
             # Move the last property to the first place
             mapconversion_properties = OrderedDict(list(psets['ePSet_MapConversion'].items())[-1:] + list(psets['ePSet_MapConversion'].items())[:-1])
             crs_properties = OrderedDict(list(psets['ePSet_ProjectedCRS'].items())[-1:] + list(psets['ePSet_ProjectedCRS'].items())[:-1])
             return Struct(**mapconversion_properties), Struct(**crs_properties)
+        
     return mapconversion, crs
 
 def get_rotation(mapconversion) -> float:
