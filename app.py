@@ -582,6 +582,21 @@ def visualize(filename):
     x2,y2 = transformer2.transform(xx,yy)
     Latitude =x2
     Longitude =y2
+    projstring = pyproj.CRS(target_epsg).to_proj4()
+    crs = pyproj.CRS(projstring)
+    alpha_value = crs.to_dict().get('alpha', None)
+    Scale_value = crs.to_dict().get('k', None)
+    Snew = Snew/Scale_value
+    if alpha_value is not None:
+        transformer3 = Transformer.from_crs(target_epsg, "EPSG:3857", always_xy=True)
+        x_3857, y_3857 = transformer3.transform(xx, yy)
+        xn_3857, yn_3857 = transformer3.transform(xx+1000, yy)
+        dx = -x_3857 + xn_3857
+        dy = -y_3857 + yn_3857
+        angle_radians = math.atan2(dy, dx)
+        angle_degrees = math.degrees(angle_radians)
+        Rotation_solution = Rotation_solution + angle_radians
+        length = math.sqrt(dx**2 + dy**2)
     return render_template('view3D.html', filename=filename, Latitude=Latitude, Longitude=Longitude, Rotate=Rotation_solution, origin = org, Scale = Snew, Gx=Gx, Gy=Gy)
 
 @app.route('/download/<filename>', methods=['GET'])
