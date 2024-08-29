@@ -575,7 +575,7 @@ def visualize(filename):
         if product.Representation:
             placement = product.ObjectPlacement
             lpMAat = ifcopenshell.util.placement.get_local_placement(placement)
-            Gx , Gy = lpMAat[0][3],lpMAat[1][3]
+            Gx , Gy = lpMAat[0][3]*eff,lpMAat[1][3]*eff
             xx = xx+Gx
             yy = yy+Gy
             break
@@ -586,7 +586,8 @@ def visualize(filename):
     crs = pyproj.CRS(projstring)
     alpha_value = crs.to_dict().get('alpha', None)
     Scale_value = crs.to_dict().get('k', None)
-    Snew = Snew/Scale_value
+    if Scale_value is not None:
+        Snew = Snew/Scale_value
     if alpha_value is not None:
         transformer3 = Transformer.from_crs(target_epsg, "EPSG:3857", always_xy=True)
         x_3857, y_3857 = transformer3.transform(xx, yy)
@@ -597,6 +598,12 @@ def visualize(filename):
         angle_degrees = math.degrees(angle_radians)
         Rotation_solution = Rotation_solution + angle_radians
         length = math.sqrt(dx**2 + dy**2)
+    transformer3 = Transformer.from_crs(target_epsg, "EPSG:3857", always_xy=True)
+    x_3857, y_3857 = transformer3.transform(xx, yy)
+    xn_3857, yn_3857 = transformer3.transform((xx+50), (yy+50))
+    dx = -x_3857 + xn_3857
+    dy = -y_3857 + yn_3857
+    length = math.sqrt(dx**2 + dy**2)
     return render_template('view3D.html', filename=filename, Latitude=Latitude, Longitude=Longitude, Rotate=Rotation_solution, origin = org, Scale = Snew, Gx=Gx, Gy=Gy)
 
 @app.route('/download/<filename>', methods=['GET'])
