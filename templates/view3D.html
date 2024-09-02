@@ -62,13 +62,13 @@
 </script>
 
 <script type="module">
-    // var Lat = 52.00521088030612;
-    // var Long = 4.369247914020436;
-    // var fn = 'bouwkunde_georeferenced_4.ifc';
-    // var Rot = 0.017;
+    // var Lat = 52.08285254645348;
+    // var Long = 4.31609264460997;
+    // var fn = 'citymap4_georeferenced.ifc';
+    // var Rot = 0.014690158531237554;
     // var sc =1;
-    // var OGx = -39040.798605970114;
-    // var OGy = 151898.13112744875;
+    // var OGx = 0;
+    // var OGy = 0;
     var OGx = '{{ Gx }}';
     var OGy = '{{ Gy }}';
     var org = [0,0,0];
@@ -77,6 +77,8 @@
     var fn = '{{filename}}';
     var Rot = '{{Rotate}}';
     var sc = '{{Scale}}';
+    var scCRS = '{{ScaleCRS}}';
+    // var scCRS = 0.9985;
     // var org = '{{origin}}';
 
     import * as THREE from 'three';
@@ -113,7 +115,6 @@
         const modelAsMercatorCoordinate = maplibregl.MercatorCoordinate.fromLngLat(modelOrigin, modelAltitude);
         const customTranslateX = org.at(0) * modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
         const customTranslateY = org.at(1) * modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
-
         // const customTranslateX = 0.000002;
         const modelTransform = {
             translateX: modelAsMercatorCoordinate.x + customTranslateX,
@@ -122,9 +123,9 @@
             rotateX: modelRotate[0],
             rotateY: modelRotate[1],
             rotateZ: modelRotate[2],
-            scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits()*sc
+            scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits()
         };
-
+        var BIMscale = modelTransform.scale*scCRS*sc*0.9985;
         // Scene
         scene = new THREE.Scene();
         // scene.background = new THREE.Color(0x8cc7de);
@@ -179,7 +180,7 @@
                 const m = new THREE.Matrix4().fromArray(matrix);
                 const l = new THREE.Matrix4()
                     .makeTranslation(modelTransform.translateX, modelTransform.translateY, modelTransform.translateZ)
-                    .scale(new THREE.Vector3(modelTransform.scale, -modelTransform.scale, modelTransform.scale))
+                    .scale(new THREE.Vector3(BIMscale,-BIMscale,BIMscale))
                     .multiply(rotationX)
                     .multiply(rotationY)
                     .multiply(rotationZ);
