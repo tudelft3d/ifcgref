@@ -9,10 +9,8 @@
     <style>
         body { margin: 0; padding: 0; }
         html, body, #map { height: 100%; }
-        #changeMapButton {
+        #changeMapButton, #orgSliderX, #orgSliderY, #orgSliderZ {
             position: absolute;
-            bottom: 10px;  /* Change this from top to bottom */
-            left: 10px;
             z-index: 10;
             padding: 10px;
             background-color: #008CBA;
@@ -21,13 +19,52 @@
             cursor: pointer;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+        #changeMapButton {
+            bottom: 10px;
+            left: 10px;
+        }
+        #orgSliderX {
+            bottom: 160px;
+            left: 10px;
+        }
+        #valueX {
+            bottom: 160px;
+            left: 220px;
+            z-index: 10;
+            position: absolute;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #orgSliderY {
+            bottom: 110px;
+            left: 10px;
+        }
+        #valueY {
+            bottom: 110px;
+            left: 220px;
+            z-index: 10;
+            position: absolute;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #orgSliderZ {
+            bottom: 60px;
+            left: 10px;
+        }
+        #valueZ {
+            bottom: 60px;
+            left: 220px;
+            z-index: 10;
+            position: absolute;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
         #logo1 {
             position: absolute;
             top: 10px;
             left: 10px;
             z-index: 20;
             width: 100px;
-
         }
         #logo2 {
             position: absolute;
@@ -35,7 +72,6 @@
             right: 10px;
             z-index: 20;
             width: 100px;
-
         }
     </style>
 </head>
@@ -43,6 +79,14 @@
 
 <div id="map"></div>
 <button id="changeMapButton">Change Map</button>
+<input id="orgSliderX" type="range" min="-100" max="100" step="1" value="0" />
+<span id="valueX">0</span>
+
+<input id="orgSliderY" type="range" min="-100" max="100" step="1" value="0" />
+<span id="valueY">0</span>
+
+<input id="orgSliderZ" type="range" min="-100" max="100" step="1" value="0" />
+<span id="valueZ">0</span>
 <img id="logo1" src="../static/images/logo1.png" alt="logo1" />
 <a href="https://3d.bk.tudelft.nl/"><img id="logo2" src="../static/images/logo2.png" alt="logo2"> </a>
 <script src='https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.js'></script>
@@ -62,23 +106,23 @@
 </script>
 
 <script type="module">
-    // var Lat = 52.08285254645348;
-    // var Long = 4.31609264460997;
-    // var fn = 'citymap4_georeferenced.ifc';
-    // var Rot = 0.014690158531237554;
-    // var sc =1;
-    // var OGx = 0;
-    // var OGy = 0;
-    var OGx = '{{ Gx }}';
-    var OGy = '{{ Gy }}';
-    var org = [0,0,0];
-    var Lat = '{{ Latitude }}';
-    var Long = '{{ Longitude }}';
-    var fn = '{{filename}}';
-    var Rot = '{{Rotate}}';
-    var sc = '{{Scale}}';
-    var scCRS = '{{ScaleCRS}}';
-    // var scCRS = 0.9985;
+    var Lat = 52.08285254645348;
+    var Long = 4.31609264460997;
+    var fn = 'citymap4_georeferenced.ifc';
+    var Rot = 0.014690158531237554;
+    var sc =1;
+    var OGx = 0;
+    var OGy = 0;
+    // var OGx = '{{ Gx }}';
+    // var OGy = '{{ Gy }}';
+    var org = [0, 0, 0];
+    // var Lat = '{{ Latitude }}';
+    // var Long = '{{ Longitude }}';
+    // var fn = '{{filename}}';
+    // var Rot = '{{Rotate}}';
+    // var sc = '{{Scale}}';
+    // var scCRS = '{{ScaleCRS}}';
+    var scCRS = 1;
     // var org = '{{origin}}';
 
     import * as THREE from 'three';
@@ -96,12 +140,8 @@
     ];
 
     async function init() {
-
-        // Initialize Map
         map = new maplibregl.Map({
             container: 'map',
-            // style: 'https://api.maptiler.com/maps/streets-v2/style.json?key=0WhPYrwttynpLXQDYYip',
-            // style: 'https://api.maptiler.com/maps/openstreetmap/style.json?key=0WhPYrwttynpLXQDYYip',
             style: styles[currentStyleIndex],
             zoom: 18,
             center: [Long, Lat],
@@ -110,27 +150,26 @@
         });
 
         const modelOrigin = [Long, Lat];
-        const modelAltitude = 0;
+        const modelAltitude =0;
         const modelRotate = [Math.PI / 2, Rot, 0];
         const modelAsMercatorCoordinate = maplibregl.MercatorCoordinate.fromLngLat(modelOrigin, modelAltitude);
         const customTranslateX = org.at(0) * modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
         const customTranslateY = org.at(1) * modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
-        // const customTranslateX = 0.000002;
+        const customTranslateZ = org.at(2) * modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
+
         const modelTransform = {
             translateX: modelAsMercatorCoordinate.x + customTranslateX,
             translateY: modelAsMercatorCoordinate.y + customTranslateY,
-            translateZ: modelAsMercatorCoordinate.z,
+            translateZ: modelAsMercatorCoordinate.z + customTranslateZ,
             rotateX: modelRotate[0],
             rotateY: modelRotate[1],
             rotateZ: modelRotate[2],
             scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits()
         };
-        var BIMscale = modelTransform.scale*scCRS*sc*0.9985;
-        // Scene
-        scene = new THREE.Scene();
-        // scene.background = new THREE.Color(0x8cc7de);
+        var BIMscale = modelTransform.scale * scCRS * sc * 0.9985;
 
-        // Lights
+        scene = new THREE.Scene();
+
         const directionalLight1 = new THREE.DirectionalLight(0xffeeff, 2.5);
         directionalLight1.position.set(1, 1, 1);
         scene.add(directionalLight1);
@@ -142,7 +181,6 @@
         const ambientLight = new THREE.AmbientLight(0xffffee, 0.75);
         scene.add(ambientLight);
 
-        // Setup IFC Loader
         ifcLoader = new IFCLoader();
         await ifcLoader.ifcManager.setWasmPath('https://cdn.jsdelivr.net/npm/web-ifc@0.0.36/', true);
         await ifcLoader.ifcManager.parser.setupOptionalCategories({ [IFCSPACE]: false });
@@ -154,7 +192,6 @@
             render();
         });
 
-        // Renderer
         renderer = new THREE.WebGLRenderer({
             canvas: map.getCanvas(),
             context: map.painter.context.gl,
@@ -209,7 +246,6 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         render();
     }
-
     function render() {
         if (customLayer.camera) {
             renderer.render(scene, customLayer.camera);
@@ -222,16 +258,20 @@
         init();
         renderer.render(scene, customLayer.camera);
     }
-    init();
-    document.getElementById('changeMapButton').addEventListener('click', toggleMapStyle);
-    
-    // document.getElementById('changeMapButton').addEventListener('click', function() {
-    //     // map.setStyle('https://api.maptiler.com/maps/streets-v2/style.json?key=0WhPYrwttynpLXQDYYip');
-    //     // if (customLayer) {
-    //     // map.removeLayer(customLayer.id);
-    //     // init();
-    // }
 
+    function updateOrgValue(index, value) {
+        org[index] = parseFloat(value);
+        document.getElementById(`value${['X', 'Y', 'Z'][index]}`).textContent = value;
+        customLayer.camera.updateProjectionMatrix();
+        renderer.render(scene, customLayer.camera);
+    }
+
+    document.getElementById('changeMapButton').addEventListener('click', toggleMapStyle);
+    document.getElementById('orgSliderX').addEventListener('input', (event) => updateOrgValue(0, event.target.value));
+    document.getElementById('orgSliderY').addEventListener('input', (event) => updateOrgValue(1, event.target.value));
+    document.getElementById('orgSliderZ').addEventListener('input', (event) => updateOrgValue(2, event.target.value));
+
+    init();
 </script>
 </body>
 </html>
