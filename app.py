@@ -580,6 +580,19 @@ def visualize(filename):
                 yy = yy+Gy
                 break
     x2,y2 = transformer2.transform(xx,yy)
+
+    # ifc_site = ifc_file.by_type("IfcSite")
+
+
+    # #Find Longtitude and Latitude
+    # RLat = ifc_site[0].RefLatitude
+    # RLon = ifc_site[0].RefLongitude
+    # RElev = ifc_site[0].RefElevation
+    # if RLat is not None and RLon is not None:
+    #     x0= (float(RLat[0]) + float(RLat[1])/60 + float(RLat[2]+RLat[3]/1000000)/(60*60))
+    #     y0= (float(RLon[0]) + float(RLon[1])/60 + float(RLon[2]+RLon[3]/1000000)/(60*60))
+
+
     Latitude =x2
     Longitude =y2
     projstring = pyproj.CRS(target_epsg).to_proj4()

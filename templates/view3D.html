@@ -79,13 +79,13 @@
 
 <div id="map"></div>
 <button id="changeMapButton">Change Map</button>
-<input id="orgSliderX" type="range" min="-100" max="100" step="1" value="0" />
+<input id="orgSliderX" type="range" min="-252.166" max="252.166" step="1" value="0" />
 <span id="valueX">0</span>
 
-<input id="orgSliderY" type="range" min="-100" max="100" step="1" value="0" />
+<input id="orgSliderY" type="range" min="-252.166" max="252.166" step="1" value="0" />
 <span id="valueY">0</span>
 
-<input id="orgSliderZ" type="range" min="-100" max="100" step="1" value="0" />
+<input id="orgSliderZ" type="range" min="-252.166" max="252.166" step="1" value="0" />
 <span id="valueZ">0</span>
 <img id="logo1" src="../static/images/logo1.png" alt="logo1" />
 <a href="https://3d.bk.tudelft.nl/"><img id="logo2" src="../static/images/logo2.png" alt="logo2"> </a>
@@ -106,23 +106,23 @@
 </script>
 
 <script type="module">
-    var Lat = 52.08285254645348;
-    var Long = 4.31609264460997;
-    var fn = 'citymap4_georeferenced.ifc';
-    var Rot = 0.014690158531237554;
-    var sc =1;
-    var OGx = 0;
-    var OGy = 0;
-    // var OGx = '{{ Gx }}';
-    // var OGy = '{{ Gy }}';
+    // var Lat = 52.08285254645348;
+    // var Long = 4.31609264460997;
+    // var fn = 'citymap4_georeferenced.ifc';
+    // var Rot = 0.014690158531237554;
+    // var sc =1;
+    // var OGx = 0;
+    // var OGy = 0;
+    var OGx = '{{ Gx }}';
+    var OGy = '{{ Gy }}';
     var org = [0, 0, 0];
-    // var Lat = '{{ Latitude }}';
-    // var Long = '{{ Longitude }}';
-    // var fn = '{{filename}}';
-    // var Rot = '{{Rotate}}';
-    // var sc = '{{Scale}}';
-    // var scCRS = '{{ScaleCRS}}';
-    var scCRS = 1;
+    var Lat = '{{ Latitude }}';
+    var Long = '{{ Longitude }}';
+    var fn = '{{filename}}';
+    var Rot = '{{Rotate}}';
+    var sc = '{{Scale}}';
+    var scCRS = '{{ScaleCRS}}';
+    // var scCRS = 1;
     // var org = '{{origin}}';
 
     import * as THREE from 'three';
@@ -262,7 +262,7 @@
     function updateOrgValue(index, value) {
         org[index] = parseFloat(value);
         document.getElementById(`value${['X', 'Y', 'Z'][index]}`).textContent = value;
-        customLayer.camera.updateProjectionMatrix();
+        init();
         renderer.render(scene, customLayer.camera);
     }
 
