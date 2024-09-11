@@ -42,6 +42,14 @@
 <body>
 
 <div id="map"></div>
+<div id="radioGroup" style="position: absolute; bottom: 60px; left: 10px; z-index: 10;">
+    <label>
+        <input type="radio" name="toggle" value="0" checked> BIM local zero
+    </label>
+    <label>
+        <input type="radio" name="toggle" value="1"> BIM lowest level
+    </label>
+</div>
 <button id="changeMapButton">Change Map</button>
 <img id="logo1" src="../static/images/logo1.png" alt="logo1" />
 <a href="https://3d.bk.tudelft.nl/"><img id="logo2" src="../static/images/logo2.png" alt="logo2"> </a>
@@ -69,17 +77,19 @@
     // var sc =1;
     // var OGx = 0;
     // var OGy = 0;
+    // var scCRS = 0.9985;
+    // var lz = -1;
     var OGx = '{{ Gx }}';
     var OGy = '{{ Gy }}';
-    var org = [0,0,0];
     var Lat = '{{ Latitude }}';
     var Long = '{{ Longitude }}';
     var fn = '{{filename}}';
     var Rot = '{{Rotate}}';
     var sc = '{{Scale}}';
     var scCRS = '{{ScaleCRS}}';
-    // var scCRS = 0.9985;
-    // var org = '{{origin}}';
+    var lz = '{{LowestLevel}}'
+    var org = [0,0,0];
+
 
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -115,11 +125,14 @@
         const modelAsMercatorCoordinate = maplibregl.MercatorCoordinate.fromLngLat(modelOrigin, modelAltitude);
         const customTranslateX = org.at(0) * modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
         const customTranslateY = org.at(1) * modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
+        const customTranslateZ = org.at(2) * modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
+
+
         // const customTranslateX = 0.000002;
         const modelTransform = {
             translateX: modelAsMercatorCoordinate.x + customTranslateX,
             translateY: modelAsMercatorCoordinate.y + customTranslateY,
-            translateZ: modelAsMercatorCoordinate.z,
+            translateZ: modelAsMercatorCoordinate.z + customTranslateZ,
             rotateX: modelRotate[0],
             rotateY: modelRotate[1],
             rotateZ: modelRotate[2],
@@ -225,12 +238,20 @@
     init();
     document.getElementById('changeMapButton').addEventListener('click', toggleMapStyle);
     
-    // document.getElementById('changeMapButton').addEventListener('click', function() {
-    //     // map.setStyle('https://api.maptiler.com/maps/streets-v2/style.json?key=0WhPYrwttynpLXQDYYip');
-    //     // if (customLayer) {
-    //     // map.removeLayer(customLayer.id);
-    //     // init();
-    // }
+    document.querySelectorAll('input[name="toggle"]').forEach((elem) => {
+        elem.addEventListener('change', function(event) {
+            const selectedValue = event.target.value;
+            console.log("Radio button selected value: ", selectedValue);
+            if (selectedValue === '1') {
+                org[2] = -lz;
+            } else {
+                // Optionally reset org[2] to its default value when it's not 1
+                org[2] = 0;
+            }
+            init();
+            render();        
+        });
+    });
 
 </script>
 </body>

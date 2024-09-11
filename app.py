@@ -604,7 +604,17 @@ def visualize(filename):
     dx = -x_3857 + xn_3857
     dy = -y_3857 + yn_3857
     length = math.sqrt(dx**2 + dy**2)
-    return render_template('view3D.html', filename=filename, Latitude=Latitude, Longitude=Longitude, Rotate=Rotation_solution, origin = org, Scale = Snew, ScaleCRS = Scale_value, Gx=Gx, Gy=Gy)
+    min_z_value = float('inf')
+
+    for product in ifc_file.by_type('IfcProduct'):
+    # Check if the product has a placement
+        if product.Representation:
+            placement = product.ObjectPlacement
+            location = ifcopenshell.util.placement.get_local_placement(placement)
+            z_value = location[2][3]*eff  # Z is usually the 3rd coordinate (0: X, 1: Y, 2: Z)            
+            if z_value < min_z_value:
+                min_z_value = z_value
+    return render_template('view3D.html', filename=filename, Latitude=Latitude, Longitude=Longitude, Rotate=Rotation_solution, origin = org, Scale = Snew, ScaleCRS = Scale_value, Gx=Gx, Gy=Gy, LowestLevel = min_z_value)
 
 @app.route('/download/<filename>', methods=['GET'])
 def download(filename):
