@@ -157,8 +157,8 @@ def infoExt(filename , epsgCode):
         errorMessage = "IFC/Map unit error"
         return messages, errorMessage
     if Refl:
-        messages.append(("Reference Longitude",round(y0,4)))
-        messages.append(("Reference Latitude",round(x0,4)))
+        messages.append(("Reference Longitude",y0))
+        messages.append(("Reference Latitude",x0))
         messages.append(("Reference Elevation",RElev))
 
     messages.append(("Target CRS Unit",str.lower(crsunit)))
