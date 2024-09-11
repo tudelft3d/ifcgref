@@ -199,7 +199,7 @@
                     .multiply(rotationZ);
 
                 this.camera.projectionMatrix = m.multiply(l);
-                const clippingPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+                const clippingPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), org[2]);
                 this.renderer.clippingPlanes = [clippingPlane];
                 this.renderer.localClippingEnabled = true;
                 this.renderer.resetState();
