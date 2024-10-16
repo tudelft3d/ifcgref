@@ -165,11 +165,6 @@
             model.mesh.position.set(-OGx, 0, OGy);
             scene.add(model.mesh);
             const boundingBox = new THREE.Box3().setFromObject(model.mesh);
-            console.log('Bounding Box:', boundingBox);
-            
-            // Get the min and max points of the bounding box
-            console.log('Min:', boundingBox.min.y); // { x, y, z }
-            console.log('Max:', boundingBox.max); // { x, y, z }
             lz = boundingBox.min.y;
             render();
         });
