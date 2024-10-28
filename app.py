@@ -594,6 +594,8 @@ def visualize(filename):
     crs = pyproj.CRS(projstring)
     alpha_value = crs.to_dict().get('alpha', None)
     Scale_value = crs.to_dict().get('k', None)
+    if Scale_value is None:
+        Scale_value = 1
     # if Scale_value is not None:
     #     Snew = Snew/Scale_value
     # if alpha_value is not None:
