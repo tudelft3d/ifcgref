@@ -396,6 +396,7 @@ def calculate(filename):
         if Refl:
             xt = session.get('xt')
             yt = session.get('yt')
+            zt = session.get('zt')
             bx = session.get('bx')
             by = session.get('by')
             data_points.append({"X": bx, "Y": by, "X_prime": xt, "Y_prime": yt})
@@ -415,6 +416,7 @@ def calculate(filename):
             N_solution = float(request.form[f'y_prime{0}']) - (B*float(request.form[f'x{0}'])*coeff) - (A*float(request.form[f'y{0}'])*coeff)
             session['z1'] = float(request.form[f'z_prime{0}'])
             session['bz'] = float(request.form[f'z{0}'])
+            H_solution = float(request.form[f'z_prime{0}']) - (float(request.form[f'z{0}'])*coeff)
 
         #seperater
         else:
@@ -452,32 +454,38 @@ def calculate(filename):
                         Num = rows
                         return render_template('survey.html', message=message, Num=Num)
 
-                    data_points.append({"X": x, "Y": y, "X_prime": x_prime, "Y_prime": y_prime})
+                    data_points.append({"X": x, "Y": y, "Z":z,"X_prime": x_prime, "Y_prime": y_prime, "Z_prime": z_prime})
 
                 def equations(variables, data_points):
-                        S, Rotation, E, N = variables
+                        S, Rotation, E, N , H = variables
                         eqs = []
 
                         for data in data_points:
                             X = data["X"]
                             Y = data["Y"]
+                            Z = data["Z"]
                             X_prime = data["X_prime"]
                             Y_prime = data["Y_prime"]
+                            Z_prime = data["Z_prime"]
 
                             eq1 = S * np.cos(Rotation) * X - S * np.sin(Rotation) * Y + E - X_prime
                             eq2 = S * np.sin(Rotation) * X + S * np.cos(Rotation) * Y + N - Y_prime
-                            eqs.extend([eq1, eq2])
+                            eq3 = S*Z + H - Z_prime
+                            eqs.extend([eq1, eq2, eq3])
 
                         return eqs
                     # Initial guess for variables [S, Rotation, E, N]
                 if Refl:
-                    initial_guess = [coeff, 0, xt, yt]
+                    initial_guess = [coeff, 0, xt, yt, zt]
                 else:
-                    initial_guess = [coeff,0,0,0]
+                    xg =float(request.form[f'x_prime{0}']) - (float(request.form[f'x{0}'])*coeff)
+                    yg = float(request.form[f'y_prime{0}']) - (float(request.form[f'y{0}'])*coeff)
+                    zg = float(request.form[f'z_prime{0}']) - (float(request.form[f'z{0}'])*coeff)
+                    initial_guess = [coeff,0,xg,yg,zg]
 
                 # Perform the least squares optimization for all data points
-                result, _ = leastsq(equations, initial_guess, args=(data_points,))
-                S_solution, Rotation_solution, E_solution, N_solution = result
+                result = leastsq(equations, initial_guess, args=(data_points,), full_output=True)
+                S_solution, Rotation_solution, E_solution, N_solution, H_solution = result[0]
 
         Rotation_degrees = (180 / math.pi) * Rotation_solution
         rDeg = Rotation_degrees - (360*round(Rotation_degrees/360))
@@ -487,7 +495,7 @@ def calculate(filename):
                                         target_crs_epsg_code=target_epsg,
                                         eastings=E_solution,
                                         northings=N_solution,
-                                        orthogonal_height=(session.get('z1')-(session.get('bz')*S_solution)),
+                                        orthogonal_height=H_solution,
                                         x_axis_abscissa=math.cos(Rotation_solution),
                                         x_axis_ordinate=math.sin(Rotation_solution),
                                         scale=S_solution)
