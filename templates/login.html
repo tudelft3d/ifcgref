@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIMserver Authentication</title>
+</head>
+<body>
+    <h1>Authenticate with BIMserver</h1>
+    <button id="authenticate">Authenticate</button>
+
+    <script>
+        const clientId = 'your-client-id';  // Replace with your client_id
+        const clientSecret = 'your-client-secret';  // Replace with your client_secret
+
+        document.getElementById('authenticate').addEventListener('click', () => {
+            // Step 1: Request a temporary token
+            fetch('https://apis.bimserver.center/v1/BIMSERVER/login?lang_interface=en', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    client_id: '473:6536781D-C8A0-4B55-998C-B5C9D588A177'	,
+                    client_secret: 'E1F0FE2E-009D-48A7-8042-443C2EE3C8F3',
+                    "scope": [
+                                    "DATA_USER_READ",
+                                    "PROJECTS_USER_READ",
+                                    "PROJECTS_USER_WRITE",
+                                    "CONTRIBUTIONS_USER_READ",
+                                    "CONTRIBUTIONS_USER_WRITE"
+                                ]
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Step 2: Redirect to the authorization URL
+                const authorizationUrl = data.url;  // Get the authorization URL from the response
+                window.location.href = authorizationUrl;
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    </script>
+</body>
+</html>

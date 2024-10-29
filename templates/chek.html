@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contribution Download</title>
+</head>
+<body>
+    <h1>Select a Contribution to Download</h1>
+    <button id="login-btn">Login</button>
+    <div id="contributions-list">Please log in to view contributions...</div>
+
+    <script>
+        let sessionId = null;
+
+        // Open login popup
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const loginPopup = window.open('login.html', 'Login', 'width=600,height=500');
+        });
+
+        // Check if sessionId is stored in localStorage
+        if (localStorage.getItem('sessionId')) {
+            sessionId = localStorage.getItem('sessionId');
+            getContributions(sessionId);
+        }
+
+        // Fetch contributions list
+        function getContributions(sessionId) {
+            fetch('https://apis.bimserver.center/v1/BIMSERVER/CONTRIBUTIONS', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionId}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const contributions = data.records;
+                displayContributions(contributions);
+            })
+            .catch(error => console.error('Error fetching contributions:', error));
+        }
+
+        // Display contributions in HTML for user selection
+        function displayContributions(contributions) {
+            const container = document.getElementById('contributions-list');
+            container.innerHTML = '';
+            contributions.forEach(contribution => {
+                const button = document.createElement('button');
+                button.textContent = contribution.name;
+                button.onclick = () => downloadContribution(contribution.id);
+                container.appendChild(button);
+            });
+        }
+
+        // Download selected contribution
+        function downloadContribution(contributionId) {
+            fetch(`https://apis.bimserver.center/v1/BIMSERVER/CONTRIBUTIONS/${contributionId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionId}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const fileUrl = data.file_url; // URL of the file associated with the contribution
+                window.location.href = fileUrl; // Initiate file download
+            })
+            .catch(error => console.error('Error downloading contribution:', error));
+        }
+    </script>
+</body>
+</html>
