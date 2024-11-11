@@ -182,13 +182,13 @@
 
         const contributionsData = await contributionsResponse.json();
         if (contributionsData.status === "OK") {
-            displayContributions(contributionsData.records);
+            displayContributions(contributionsData.records, sessionId);
         } else {
             console.error("Error fetching contributions:", contributionsData.error.message);
         }
     }
 
-    function displayContributions(contributions) {
+    function displayContributions(contributions, sessionId) {
         const contributionsDiv = document.getElementById('contributions');
         contributionsDiv.innerHTML = ""; 
 
@@ -200,16 +200,38 @@
                 <p>ID: ${contribution.id}</p>
                 <p>${contribution.description || 'No description available.'}</p>
             `;
-            contributionElement.onclick = () => selectContribution(contributionElement, contribution.id);
+            contributionElement.onclick = () => selectContribution(contributionElement, contribution.id, sessionId);
             contributionsDiv.appendChild(contributionElement);
         });
     }
 
-    function selectContribution(element, contributionId) {
+    async function selectContribution(element, contributionId, sessionId) {
         deselectAll('contributions');
         element.classList.add('selected');
-        console.log("Selected Contribution ID:", contributionId);
-        alert(`Selected Contribution ID: ${contributionId}`);
+        // console.log("Selected Contribution ID:", contributionId);
+        // alert(`Selected Contribution ID: ${contributionId}`);
+        const contributionResponse = await fetch(`https://apis.bimserver.center/v1/BIMSERVER/contributions/${contributionId}?expand=owner&lang_interface=en`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${sessionId}`
+            }
+        });
+        const contributionFile = await contributionResponse.json();
+        const Docs = contributionFile.record.documents
+        for (const Doc of Docs) {
+            const docId = Doc.id;
+            const docResponse = await fetch(`https://apis.bimserver.center/v1/BIMSERVER/documents/${docId}?expand=owner&lang_interface=en`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${sessionId}`
+                }
+            })
+            const docFile = await docResponse.json();
+            if (docFile.record.name.endsWith('.ifc')){
+                const IFCfilename = docFile.record.url
+                break;
+            }
+        }
     }
 
     function deselectAll(section) {
