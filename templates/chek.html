@@ -3,72 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contribution Download</title>
+    <title>BIMserver Projects Information</title>
+    <style>
+        .project-box {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .project-box h2 {
+            margin: 0;
+        }
+        .select-button {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .select-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-    <h1>Select a Contribution to Download</h1>
-    <button id="login-btn">Login</button>
-    <div id="contributions-list">Please log in to view contributions...</div>
 
-    <script>
-        let sessionId = null;
+<h1>Retrieve BIMserver Projects</h1>
+<div id="projects"></div>
 
-        // Open login popup
-        document.getElementById('login-btn').addEventListener('click', () => {
-            window.open('login.html', 'Login', 'width=600,height=500');
-        });
+<script>
+    async function getProjects() {
+        const clientId = '473:6536781D-C8A0-4B55-998C-B5C9D588A177';
+        const clientSecret = 'E1F0FE2E-009D-48A7-8042-443C2EE3C8F3';
+        const scope = [
+            "DATA_USER_READ",
+            "PROJECTS_USER_READ",
+            "PROJECTS_USER_WRITE",
+            "CONTRIBUTIONS_USER_READ",
+            "CONTRIBUTIONS_USER_WRITE"
+        ];
 
-        // Check if sessionId is stored in localStorage
-        if (localStorage.getItem('sessionId')) {
-            sessionId = localStorage.getItem('sessionId');
-            getContributions(sessionId);
-        }
-
-        // Fetch contributions list
-        function getContributions(sessionId) {
-            fetch('https://apis.bimserver.center/v1/BIMSERVER/CONTRIBUTIONS', {
-                method: 'GET',
+        try {
+            // Step 1: Request temporary session token
+            const loginResponse = await fetch('https://apis.bimserver.center/v1/BIMSERVER/LOGIN', {
+                method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${sessionId}`
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                const contributions = data.records;
-                displayContributions(contributions);
-            })
-            .catch(error => console.error('Error fetching contributions:', error));
-        }
-
-        // Display contributions in HTML for user selection
-        function displayContributions(contributions) {
-            const container = document.getElementById('contributions-list');
-            container.innerHTML = '';
-            contributions.forEach(contribution => {
-                const button = document.createElement('button');
-                button.textContent = contribution.name;
-                button.onclick = () => downloadContribution(contribution.id);
-                container.appendChild(button);
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    client_id: clientId,
+                    client_secret: clientSecret,
+                    scope: scope
+                })
             });
-        }
 
-        // Download selected contribution
-        function downloadContribution(contributionId) {
-            fetch(`https://apis.bimserver.center/v1/BIMSERVER/CONTRIBUTIONS/${contributionId}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${sessionId}`
+            const loginData = await loginResponse.json();
+            if (loginData.status === "OK") {
+                const authWindow = window.open(loginData.url, '_blank', 'width=600,height=400');
+                await new Promise((resolve, reject) => {
+                    const interval = setInterval(() => {
+                        if (authWindow.closed) {
+                            clearInterval(interval);
+                            resolve();
+                        }
+                    }, 1000);
+                });
+
+                const sessionTemp = loginData.session_temp;
+                const security_id = loginData.security_id;
+                const sessionResponse = await fetch(`https://apis.bimserver.center/v1/BIMSERVER/LOGIN/${sessionTemp}?security_id=${security_id}&lang_interface=en`, {
+                    method: 'GET'    
+                });
+                const sessionData = await sessionResponse.json();
+
+                if (sessionData.status === "OK") {
+                    const sessionId = sessionData.session_id;
+
+                    const projectsResponse = await fetch('https://apis.bimserver.center/v1/BIMSERVER/PROJECTS', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${sessionId}`
+                        }
+                    });
+
+                    const projectsData = await projectsResponse.json();
+                    if (projectsData.status === "OK") {
+                        displayProjects(projectsData.records);
+                    } else {
+                        console.error("Error fetching projects:", projectsData.error.message);
+                    }
+                } else {
+                    console.error("Error fetching session token:", sessionData.error.message);
                 }
-            })
-            .then(response => response.json())
-            .then(data => {
-                const fileUrl = data.file_url; // URL of the file associated with the contribution
-                window.location.href = fileUrl; // Initiate file download
-            })
-            .catch(error => console.error('Error downloading contribution:', error));
+            } else {
+                console.error("Error logging in:", loginData.error.message);
+            }
+        } catch (error) {
+            console.error("Request failed:", error);
         }
-    </script>
+    }
+
+    function displayProjects(projects) {
+        const projectsDiv = document.getElementById('projects');
+        projectsDiv.innerHTML = ""; // Clear previous content if any
+
+        projects.forEach(project => {
+            const projectElement = document.createElement('div');
+            projectElement.className = 'project-box';
+            projectElement.innerHTML = `
+                <h2>${project.name}</h2>
+                <p>ID: ${project.id}</p>
+                <p>Description: ${project.description}</p>
+                <button class="select-button" onclick="selectProject('${project.id}')">Select Project</button>
+            `;
+            projectsDiv.appendChild(projectElement);
+        });
+    }
+
+    function selectProject(projectId) {
+        console.log("Selected Project ID:", projectId);
+        // Alternatively, display it on the page
+        alert(`Selected Project ID: ${projectId}`);
+    }
+
+    getProjects();
+</script>
+
 </body>
 </html>
