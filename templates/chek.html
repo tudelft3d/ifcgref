@@ -3,36 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIMserver Projects Information</title>
+    <title>BIMserver Project Contributions</title>
     <style>
-        .project-box {
-            border: 1px solid #ddd;
-            padding: 20px;
-            margin: 10px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .project-box h2 {
+        /* Styles adapted from survey.html */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            background-color: #f8f9fa;
+            align-items: center;
             margin: 0;
+            padding: 20px;
+            flex-direction: column;
         }
-        .select-button {
-            margin-top: 10px;
-            padding: 10px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 5px;
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+        }
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logo {
+            max-height: 60px;
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 22px;
+            color: #333;
+        }
+        .box {
+            display: inline-block;
+            margin: 10px;
+            padding: 20px;
+            width: 150px;
+            height: 120px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
             cursor: pointer;
+            transition: background-color 0.3s;
+            overflow: hidden;
         }
-        .select-button:hover {
-            background-color: #0056b3;
+        .box:hover {
+            background-color: #f1f1f1;
+        }
+        .box.selected {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .info-text {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #333;
         }
     </style>
 </head>
 <body>
+<div class="header">
+    <img src="../static/images/logo1.png" alt="Logo 1" class="logo">
+    <a href="https://3d.bk.tudelft.nl/"><img src="../static/images/logo2.png" alt="Logo 2" class="logo"></a>
+</div>
+<div class="container">
+    <h1>Select a Project:</h1>
+    <div id="projects"></div>
 
-<h1>Retrieve BIMserver Projects</h1>
-<div id="projects"></div>
+    <h1>Contributions for the Selected Project:</h1>
+    <div id="contributions"></div>
+</div>
 
 <script>
     async function getProjects() {
@@ -47,7 +93,6 @@
         ];
 
         try {
-            // Step 1: Request temporary session token
             const loginResponse = await fetch('https://apis.bimserver.center/v1/BIMSERVER/LOGIN', {
                 method: 'POST',
                 headers: {
@@ -63,7 +108,7 @@
             const loginData = await loginResponse.json();
             if (loginData.status === "OK") {
                 const authWindow = window.open(loginData.url, '_blank', 'width=600,height=400');
-                await new Promise((resolve, reject) => {
+                await new Promise((resolve) => {
                     const interval = setInterval(() => {
                         if (authWindow.closed) {
                             clearInterval(interval);
@@ -91,7 +136,7 @@
 
                     const projectsData = await projectsResponse.json();
                     if (projectsData.status === "OK") {
-                        displayProjects(projectsData.records);
+                        displayProjects(projectsData.records, sessionId);
                     } else {
                         console.error("Error fetching projects:", projectsData.error.message);
                     }
@@ -106,27 +151,70 @@
         }
     }
 
-    function displayProjects(projects) {
+    function displayProjects(projects, sessionId) {
         const projectsDiv = document.getElementById('projects');
-        projectsDiv.innerHTML = ""; // Clear previous content if any
+        projectsDiv.innerHTML = ""; 
 
         projects.forEach(project => {
             const projectElement = document.createElement('div');
-            projectElement.className = 'project-box';
+            projectElement.className = 'box';
             projectElement.innerHTML = `
-                <h2>${project.name}</h2>
-                <p>ID: ${project.id}</p>
-                <p>Description: ${project.description}</p>
-                <button class="select-button" onclick="selectProject('${project.id}')">Select Project</button>
+                <div class="info-text"><strong>${project.name}</strong></div>
             `;
+            projectElement.onclick = () => selectProject(projectElement, project.id, sessionId);
             projectsDiv.appendChild(projectElement);
         });
     }
 
-    function selectProject(projectId) {
-        console.log("Selected Project ID:", projectId);
-        // Alternatively, display it on the page
-        alert(`Selected Project ID: ${projectId}`);
+    function selectProject(element, projectId, sessionId) {
+        deselectAll('projects');
+        element.classList.add('selected');
+        getContributions(projectId, sessionId);
+    }
+
+    async function getContributions(projectId, sessionId) {
+        const contributionsResponse = await fetch(`https://apis.bimserver.center/v1/BIMSERVER/CONTRIBUTIONS?project_id=${projectId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${sessionId}`
+            }
+        });
+
+        const contributionsData = await contributionsResponse.json();
+        if (contributionsData.status === "OK") {
+            displayContributions(contributionsData.records);
+        } else {
+            console.error("Error fetching contributions:", contributionsData.error.message);
+        }
+    }
+
+    function displayContributions(contributions) {
+        const contributionsDiv = document.getElementById('contributions');
+        contributionsDiv.innerHTML = ""; 
+
+        contributions.forEach(contribution => {
+            const contributionElement = document.createElement('div');
+            contributionElement.className = 'box';
+            contributionElement.innerHTML = `
+                <div class="info-text"><strong>${contribution.name}</strong></div>
+                <p>ID: ${contribution.id}</p>
+                <p>${contribution.description || 'No description available.'}</p>
+            `;
+            contributionElement.onclick = () => selectContribution(contributionElement, contribution.id);
+            contributionsDiv.appendChild(contributionElement);
+        });
+    }
+
+    function selectContribution(element, contributionId) {
+        deselectAll('contributions');
+        element.classList.add('selected');
+        console.log("Selected Contribution ID:", contributionId);
+        alert(`Selected Contribution ID: ${contributionId}`);
+    }
+
+    function deselectAll(section) {
+        const parentDiv = document.getElementById(section);
+        Array.from(parentDiv.getElementsByClassName('box')).forEach(box => box.classList.remove('selected'));
     }
 
     getProjects();
