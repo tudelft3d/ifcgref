@@ -79,8 +79,12 @@
     <h1>Contributions for the Selected Project:</h1>
     <div id="contributions"></div>
 </div>
-
+<form id="upload-form" action="/upload" method="POST" enctype="multipart/form-data" style="display: none;">
+    <input type="file" name="file" id="file-input">
+</form>
 <script>
+    const fileInput = document.getElementById('file-input');
+    const form = document.getElementById('upload-form');
     async function getProjects() {
         const clientId = '473:6536781D-C8A0-4B55-998C-B5C9D588A177';
         const clientSecret = 'E1F0FE2E-009D-48A7-8042-443C2EE3C8F3';
@@ -228,18 +232,40 @@
             })
             const docFile = await docResponse.json();
             if (docFile.record.name.endsWith('.ifc')){
-                const IFCfilename = docFile.record.url
+                const IFCfileurl = docFile.record.url
+                downloadAndSubmitIFCFile(IFCfileurl , docFile.record.name);
                 break;
             }
         }
     }
+    async function downloadAndSubmitIFCFile(url,filename) {
+        try {
+            // Fetch the IFC file from the URL
+            const response = await fetch(url);
+            const blob = await response.blob();
 
+            // Create a File object from the blob
+            const ifcFile = new File([blob], filename, { type: blob.type });
+
+            // Populate the form's file input with the IFC file
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(ifcFile);
+            fileInput.files = dataTransfer.files;
+
+            // Submit the form
+            form.submit();
+        } catch (error) {
+            console.error('Failed to download and submit IFC file:', error);
+            alert('Failed to submit IFC file');
+        }
+    }
     function deselectAll(section) {
         const parentDiv = document.getElementById(section);
         Array.from(parentDiv.getElementsByClassName('box')).forEach(box => box.classList.remove('selected'));
     }
 
     getProjects();
+
 </script>
 
 </body>
