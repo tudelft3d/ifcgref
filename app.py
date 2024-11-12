@@ -654,6 +654,10 @@ def temp(filename):
 @app.route('/uploads/<path:filename>')
 def ups(filename):
     return send_from_directory('uploads', filename)
-   
+
+@app.route('/chek',  methods=['GET', 'POST'])
+def chs():
+    return render_template('chek.html')
+
 if __name__ == '__main__':
     app.run(debug=True)
