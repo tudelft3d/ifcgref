@@ -92,7 +92,6 @@ def infoExt(filename , epsgCode):
         errorMessage = "IFC2X3, IFC4, and newer versions are supported.\n"
         return messages, errorMessage
 
-    bx,by,bz = 0,0,0
     # Find local origin
 
                 
@@ -182,7 +181,7 @@ def infoExt(filename , epsgCode):
         y2= y1*coeff
         session['xt'] = x1
         session['yt'] = y1
-        session['z1'] = z1
+        session['zt'] = z1
         session['Longitude'] = y0
         session['Latitude'] = x0
 
@@ -359,7 +358,7 @@ def local_trans(filename , messages):
     ifc_file = fileOpener(filename)
     xt = session.get('xt')
     yt = session.get('yt')
-    z1 = session.get('z1')
+    zt = session.get('zt')
     bx,by,bz = 0,0,0
     error = ""
     if hasattr(ifc_file.by_type("IfcSite")[0], "ObjectPlacement") and ifc_file.by_type("IfcSite")[0].ObjectPlacement.is_a("IfcLocalPlacement"):
@@ -377,7 +376,7 @@ def local_trans(filename , messages):
     session['by'] = by        
     session['bz'] = bz        
 
-    messages.append(("First Point Target coordinates" , ("(" + str(xt) + ", " + str(yt) + ", " + str(z1) + ")")))
+    messages.append(("First Point Target coordinates" , ("(" + str(xt) + ", " + str(yt) + ", " + str(zt) + ")")))
     error += '\n\nAccuracy of the results improves as you provide more georeferenced points.\nWithout any additional georeferenced points, it is assumed that the model is scaled based on unit conversion and rotation is derived from TrueNorth direction (if available).\n'
 
     ifc_file = ifc_file.end_transaction()
@@ -399,7 +398,8 @@ def calculate(filename):
             zt = session.get('zt')
             bx = session.get('bx')
             by = session.get('by')
-            data_points.append({"X": bx, "Y": by, "X_prime": xt, "Y_prime": yt})
+            bz = session.get('bz')
+            data_points.append({"X": bx, "Y": by, "Z": bz, "X_prime": xt, "Y_prime": yt, "Z_prime":zt})
         #seperater
         if not Refl and rows == 1:
             Rotation_solution = 0
@@ -414,7 +414,7 @@ def calculate(filename):
             B = math.sin(Rotation_solution)
             E_solution = float(request.form[f'x_prime{0}']) - (A*float(request.form[f'x{0}'])*coeff) + (B*float(request.form[f'y{0}'])*coeff)
             N_solution = float(request.form[f'y_prime{0}']) - (B*float(request.form[f'x{0}'])*coeff) - (A*float(request.form[f'y{0}'])*coeff)
-            session['z1'] = float(request.form[f'z_prime{0}'])
+            session['zt'] = float(request.form[f'z_prime{0}'])
             session['bz'] = float(request.form[f'z{0}'])
             H_solution = float(request.form[f'z_prime{0}']) - (float(request.form[f'z{0}'])*coeff)
 
@@ -433,6 +433,7 @@ def calculate(filename):
                 B = math.sin(Rotation_solution)
                 E_solution = xt - (A*S_solution*bx) + (B*S_solution*by)
                 N_solution = yt - (B*S_solution*bx) - (A*S_solution*by)
+                H_solution = zt - (S_solution*bz)
             else:
                 for row in range(rows):
                     x = request.form[f'x{row}']
