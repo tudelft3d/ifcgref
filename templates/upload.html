@@ -9,12 +9,14 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
-            justify-content: center;
+            justify-content: flex-start;
             background-color: #f8f9fa;
             align-items: center;
             margin: 0;
-            padding: 20px;
+            min-height: 100vh;
+            padding: 20px 20px 130px;
             flex-direction: column;
+            box-sizing: border-box;
         }
         .container {
             background-color: #fff;
@@ -80,7 +82,6 @@
             100% { opacity: 0; }
         }
         .box {
-            
             display: inline-block;
             margin: 10px;
             padding: 20px;
@@ -90,8 +91,9 @@
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s;
-            overflow: hidden; /* Ensure the image does not exceed the box */
-            margin-top: auto;
+            overflow: hidden;
+            position: relative;
+            z-index: 2;
         }
         .box img {
             display: block;
@@ -106,36 +108,120 @@
             color: #333;
         }
         .footer {
-            display: flex;
-            flex-direction: column;
+            position: fixed;
+            left: 20px;
+            right: 20px;
+            bottom: 14px;
+            display: grid;
+            grid-template-columns: minmax(90px, 170px) minmax(220px, 1fr) minmax(90px, 170px);
             align-items: center;
-            position: absolute;
-            bottom: 10px;  /* Change this from top to bottom */
-            margin-top: auto;
+            gap: 20px;
+            z-index: 1;
         }
-
-        .footer-logos {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 40px; /* Adjust the gap between logos as needed */
-        }
-
         .footer-logo {
-            max-height: 60px; /* Match the height of the logo2.png */
+            max-width: 170px;
+            max-height: 58px;
+            object-fit: contain;
         }
-
+        .footer-logo-left {
+            justify-self: start;
+        }
+        .footer-logo-right {
+            justify-self: end;
+        }
+        .footer-copy {
+            justify-self: center;
+            max-width: 560px;
+            text-align: center;
+        }
         .footer-text {
-            margin-top: 10px;
+            margin: 0;
             font-size: 8px;
             color: #333;
-            text-align: center;
         }
         .footer-text2 {
-            margin-top: 2px;
+            margin: 4px 0 0;
             font-size: 15px;
             color: #333;
-            text-align: center;
+        }
+        .desktop-option {
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid #e6e8eb;
+            text-align: left;
+        }
+        .desktop-option h2 {
+            margin: 0 0 6px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #2f343a;
+        }
+        .desktop-option p {
+            margin: 0 0 12px;
+            font-size: 13px;
+            line-height: 1.45;
+            color: #5d6670;
+        }
+        .desktop-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 34px;
+            padding: 0 14px;
+            border-radius: 6px;
+            background: #24364b;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .desktop-action:hover {
+            background: #182738;
+        }
+        .desktop-action[aria-disabled="true"] {
+            background: #d4d8dd;
+            color: #626c76;
+            cursor: not-allowed;
+        }
+        .desktop-downloads {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .desktop-download-card {
+            min-width: 0;
+        }
+        .desktop-download-card .desktop-action {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .desktop-note {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #6f7882;
+            overflow-wrap: anywhere;
+        }
+        @media (max-width: 700px) {
+            body {
+                padding-bottom: 170px;
+            }
+            .footer {
+                grid-template-columns: 1fr 1fr;
+                align-items: end;
+                gap: 8px 16px;
+            }
+            .footer-logo {
+                max-width: 130px;
+                max-height: 44px;
+            }
+            .footer-copy {
+                grid-column: 1 / -1;
+                grid-row: 2;
+                max-width: 100%;
+            }
+            .desktop-downloads {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -163,6 +249,32 @@
             <img src="{{ url_for('static', filename='images/loading.png') }}" alt="Loading...">
         </div>
 
+        {% if not desktop_mode %}
+        <div class="desktop-option">
+            <h2>Prefer to keep files local?</h2>
+            <p>Download the desktop app to run IfcGref in your own browser on your computer. Files stay on the local machine and the desktop app has no upload size limit.</p>
+            <div class="desktop-downloads">
+                <div class="desktop-download-card">
+                    {% if windows_desktop_package_available %}
+                    <a class="desktop-action" href="{{ url_for('desktop_download', platform='windows') }}">Download Windows app</a>
+                    <div class="desktop-note">{{ windows_desktop_package_name }}</div>
+                    {% else %}
+                    <span class="desktop-action" aria-disabled="true">Windows app unavailable</span>
+                    <div class="desktop-note">Windows package is not built yet.</div>
+                    {% endif %}
+                </div>
+                <div class="desktop-download-card">
+                    {% if mac_desktop_package_available %}
+                    <a class="desktop-action" href="{{ url_for('desktop_download', platform='mac') }}">Download Mac app</a>
+                    <div class="desktop-note">{{ mac_desktop_package_name }}</div>
+                    {% else %}
+                    <span class="desktop-action" aria-disabled="true">Mac app unavailable</span>
+                    <div class="desktop-note">Build on macOS to enable this download.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
     </div>
 
@@ -217,14 +329,14 @@
         <div class="info-text">User Guide</div>
     </div>
     <div class="footer">
-        <div class="footer-logos">
-            <img src="../static/images/eu.jpg" alt="Logo 3" class="footer-logo">
-            <img src="../static/images/chek-logo.png" alt="Logo 4" class="footer-logo">
-        </div>
+        <img src="../static/images/eu.jpg" alt="Logo 3" class="footer-logo footer-logo-left">
+        <div class="footer-copy">
         <p class="footer-text">This project has received funding from the European Union’s Horizon Europe programme under Grant Agreement No.101058559
         </p>
-        <p class="footer-text2">Version 2.1
+        <p class="footer-text2">Version 3.0
         </p>
+        </div>
+        <img src="../static/images/chek-logo.png" alt="Logo 4" class="footer-logo footer-logo-right">
     </div>
 </body>
 </html>
