@@ -1,0 +1,8 @@
+Flask
+ifcopenshell
+pyproj
+pint
+numpy
+scipy
+pandas
+shapely
