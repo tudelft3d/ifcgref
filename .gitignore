@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+build/
+dist/
+desktop_dist/
+*.spec
+uploads/*.ifc
+uploads/*.json
+uploads/**/*.ifc
+uploads/**/*.json
