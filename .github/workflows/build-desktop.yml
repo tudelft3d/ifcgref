@@ -1,0 +1,39 @@
+name: Build desktop apps
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Desktop app version
+        required: true
+        default: "3.0"
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build Windows app
+        shell: pwsh
+        run: ./desktop/build_windows.ps1 -Version "${{ github.event.inputs.version }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: IfcGref-Desktop-Windows-${{ github.event.inputs.version }}
+          path: desktop_dist/IfcGref-Desktop-Windows-${{ github.event.inputs.version }}.zip
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build macOS app
+        run: bash ./desktop/build_macos.sh "${{ github.event.inputs.version }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: IfcGref-Desktop-macOS-${{ github.event.inputs.version }}
+          path: desktop_dist/IfcGref-Desktop-macOS-${{ github.event.inputs.version }}.zip
