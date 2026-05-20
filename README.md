@@ -64,9 +64,61 @@ This will start the Flask development server.
 6. The application will georeference the IFC file and provide details about the process.
 7. You can then visualize the georeferenced IFC file on the map and download it.
 
+## Configuration
+
+The application reads deployment settings from environment variables:
+
+| Variable | Default | Purpose |
+| -------- | ------- | ------- |
+| `IFCGREF_SECRET_KEY` | random per process | Flask session signing key. Set this in production so sessions survive restarts. |
+| `IFCGREF_DEBUG` | off | Set to `1`, `true`, `yes`, or `on` only for local debugging. |
+| `IFCGREF_MAX_UPLOAD_MB` | `250` | Maximum IFC upload size in megabytes. |
+| `IFCGREF_WORKERS` | `2` | Number of background IFC processing workers. |
+| `IFCGREF_UPLOAD_RETENTION_DAYS` | `30` | Number of days to keep uploaded IFC files and model state. Use `0` to disable cleanup. |
+| `IFCGREF_JOB_RETENTION_DAYS` | `7` | Number of days to keep background job status files. Use `0` to disable cleanup. |
+| `IFCGREF_MAPTILER_KEY` | empty | Optional MapTiler API key used by the MapTiler layers. |
+| `IFCGREF_HOST` | `127.0.0.1` | Host used when running `python app.py`. |
+| `IFCGREF_PORT` | `5000` | Port used when running `python app.py`. |
+| `IFCGREF_DESKTOP` | off | Enables local desktop mode. The desktop launcher sets this automatically. |
+| `IFCGREF_DATA_DIR` | current directory | Desktop/local data directory. The desktop launcher defaults to `%LOCALAPPDATA%\IfcGref`. |
+
+For local development you can also put these values in a `.env` file next to `app.py`. The `.env` file is ignored by git and should be used for local keys such as `IFCGREF_MAPTILER_KEY`.
+
+## Desktop App
+
+IfcGref can also be distributed as a desktop app that still runs in the user's browser. The desktop launcher starts the Flask tool on `127.0.0.1`, opens the browser automatically, and stores uploads locally on the user's machine. In desktop mode there is no Flask upload size limit unless `IFCGREF_MAX_UPLOAD_MB` is explicitly set.
+
+To run it locally:
+
+```bash
+python desktop_app.py
+```
+
+To build a Windows package:
+
+```powershell
+.\desktop\build_windows.ps1 -Version 3.0
+```
+
+To build a native macOS package, run this on a Mac:
+
+```bash
+bash ./desktop/build_macos.sh 3.0
+```
+
+To build the portable macOS launcher package from any OS:
+
+```bash
+python desktop/build_macos_portable.py 3.0
+```
+
+The build scripts create platform zips in `desktop_dist/`. The home page has separate Windows and Mac download buttons; each button serves the newest package for that platform from `desktop_dist/`.
+
 ## File Structure
 
 - app.py: The main Flask application file.
+- desktop_app.py: Local desktop-browser launcher.
+- desktop/: Desktop packaging instructions and scripts.
 - static/: Directory to store static files (e.g., GeoJSON output).
 - templates/: HTML templates for the web interface.
 - uploads/: Directory to temporarily store uploaded IFC files.
