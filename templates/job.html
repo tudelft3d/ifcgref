@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processing IFC</title>
+    <link rel="icon" type="image/x-icon" href="../static/images/flavicon.png">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            background-color: #f8f9fa;
+            align-items: center;
+            margin: 0;
+            min-height: 100vh;
+            padding: 20px;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logo {
+            max-height: 60px;
+        }
+        .container {
+            background-color: #fff;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 560px;
+            width: 100%;
+            text-align: left;
+            box-sizing: border-box;
+        }
+        h1 {
+            margin: 0 0 12px;
+            font-size: 24px;
+            color: #333;
+        }
+        .message {
+            min-height: 24px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+        .progress-track {
+            width: 100%;
+            height: 12px;
+            background-color: #e9ecef;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            width: 0;
+            height: 100%;
+            background-color: #007bff;
+            transition: width 0.25s ease;
+        }
+        .meta {
+            margin-top: 12px;
+            color: #555;
+            font-size: 14px;
+        }
+        .error-message {
+            color: #b00020;
+            white-space: pre-wrap;
+        }
+        .btn {
+            display: inline-block;
+            margin-top: 18px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Logo 1" class="logo">
+        <a href="https://3d.bk.tudelft.nl/"><img src="../static/images/logo2.png" alt="Logo 2" class="logo"></a>
+    </div>
+    <div class="container">
+        <h1>Processing IFC</h1>
+        <div class="message" id="stage">{{ job.stage }}</div>
+        <div class="progress-track">
+            <div class="progress-bar" id="progressBar" style="width: {{ job.progress }}%;"></div>
+        </div>
+        <div class="meta" id="progressText">{{ job.progress }}%</div>
+        <div id="error" class="error-message"></div>
+        <a id="continueButton" class="btn" href="#" style="display: none;">Continue</a>
+    </div>
+
+    <script>
+        const jobId = "{{ job.id }}";
+        const stage = document.getElementById('stage');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const error = document.getElementById('error');
+        const continueButton = document.getElementById('continueButton');
+
+        async function refreshJob() {
+            const response = await fetch(`/api/jobs/${jobId}`, { cache: 'no-store' });
+            if (!response.ok) {
+                stage.textContent = 'Job not found';
+                return;
+            }
+
+            const job = await response.json();
+            const progress = job.progress || 0;
+            stage.textContent = job.stage || job.status;
+            progressBar.style.width = `${progress}%`;
+            progressText.textContent = `${progress}%`;
+
+            if (job.status === 'complete') {
+                const redirectUrl = job.result && job.result.redirect_url;
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                    return;
+                }
+                stage.textContent = 'Ready';
+                continueButton.href = '/';
+                continueButton.textContent = 'Back to upload';
+                continueButton.style.display = 'inline-block';
+                return;
+            }
+
+            if (job.status === 'failed') {
+                const message = job.error && job.error.message ? job.error.message : 'Processing failed.';
+                error.textContent = message;
+                continueButton.href = '/';
+                continueButton.textContent = 'Back to upload';
+                continueButton.style.display = 'inline-block';
+                return;
+            }
+
+            window.setTimeout(refreshJob, 1000);
+        }
+
+        refreshJob();
+    </script>
+</body>
+</html>
