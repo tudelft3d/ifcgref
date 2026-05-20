@@ -116,7 +116,7 @@
             <input type="submit" value="Show on Map" class="btn">
         </form>
 
-        {% if not message %}
+        {% if download_available %}
         <a href="{{ url_for('download', filename=filename) }}" download class="btn-link">
             <button class="btn">Download Georeferenced IFC</button>
         </a>
