@@ -77,6 +77,11 @@
             border: 1px solid #ccc;
             border-radius: 4px;
         }
+        input.input-error {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15);
+            background: #fff7f7;
+        }
         .btn {
             background-color: #007bff;
             color: #fff;
@@ -204,6 +209,8 @@
         {% if Num %}
             <form method="POST" action="{{ url_for('calculate', filename=filename) }}" onsubmit="showLoader()">
                 <div id="tableContainer">
+                    {% set values = form_values|default({}) %}
+                    {% set errors = field_errors|default({}) %}
                     <!-- Use Jinja2 to generate the table based on the table_content data -->
                     <table>
                         <tr>
@@ -220,12 +227,18 @@
                         </tr>
                         {% for row in range(Num) %}
                         <tr>
-                            <td><input type="text" name="x{{ row }}"></td>
-                            <td><input type="text" name="y{{ row }}"></td>
-                            <td><input type="text" name="z{{ row }}"></td>
-                            <td><input type="text" name="x_prime{{ row }}"></td>
-                            <td><input type="text" name="y_prime{{ row }}"></td>
-                            <td><input type="text" name="z_prime{{ row }}"></td>
+                            {% set field_name = 'x' ~ row %}
+                            <td><input type="text" inputmode="decimal" autocomplete="off" name="{{ field_name }}" value="{{ values.get(field_name, '') }}" class="{% if field_name in errors %}input-error{% endif %}" {% if field_name in errors %}aria-invalid="true" title="{{ errors[field_name] }}"{% endif %}></td>
+                            {% set field_name = 'y' ~ row %}
+                            <td><input type="text" inputmode="decimal" autocomplete="off" name="{{ field_name }}" value="{{ values.get(field_name, '') }}" class="{% if field_name in errors %}input-error{% endif %}" {% if field_name in errors %}aria-invalid="true" title="{{ errors[field_name] }}"{% endif %}></td>
+                            {% set field_name = 'z' ~ row %}
+                            <td><input type="text" inputmode="decimal" autocomplete="off" name="{{ field_name }}" value="{{ values.get(field_name, '') }}" class="{% if field_name in errors %}input-error{% endif %}" {% if field_name in errors %}aria-invalid="true" title="{{ errors[field_name] }}"{% endif %}></td>
+                            {% set field_name = 'x_prime' ~ row %}
+                            <td><input type="text" inputmode="decimal" autocomplete="off" name="{{ field_name }}" value="{{ values.get(field_name, '') }}" class="{% if field_name in errors %}input-error{% endif %}" {% if field_name in errors %}aria-invalid="true" title="{{ errors[field_name] }}"{% endif %}></td>
+                            {% set field_name = 'y_prime' ~ row %}
+                            <td><input type="text" inputmode="decimal" autocomplete="off" name="{{ field_name }}" value="{{ values.get(field_name, '') }}" class="{% if field_name in errors %}input-error{% endif %}" {% if field_name in errors %}aria-invalid="true" title="{{ errors[field_name] }}"{% endif %}></td>
+                            {% set field_name = 'z_prime' ~ row %}
+                            <td><input type="text" inputmode="decimal" autocomplete="off" name="{{ field_name }}" value="{{ values.get(field_name, '') }}" class="{% if field_name in errors %}input-error{% endif %}" {% if field_name in errors %}aria-invalid="true" title="{{ errors[field_name] }}"{% endif %}></td>
                         </tr>
                         {% endfor %}
                     </table>
@@ -255,6 +268,7 @@
             const boxes = ['box1', 'box2', 'box3'];
             boxes.forEach(boxId => {
                 const box = document.getElementById(boxId);
+                if (!box) return;
                 if (boxId === exceptId) {
                     box.style.display = 'block';
                 } else {
@@ -263,10 +277,14 @@
             });
             if (exceptId === 'box3') {
                 Refl = false; // Assuming Refl is a variable accessible in your Javascript context
-             }
+            }
         }
 
-        document.getElementById('box1').addEventListener('click', function() {
+        const box1 = document.getElementById('box1');
+        const box2 = document.getElementById('box2');
+        const box3 = document.getElementById('box3');
+
+        if (box1) box1.addEventListener('click', function() {
             document.getElementById('numForm').style.display = 'none';
             document.getElementById('boxNumber').value = '1';
             document.getElementById('Num').value = '0';
@@ -274,13 +292,13 @@
             document.getElementById('numForm').submit();
         });
 
-        document.getElementById('box2').addEventListener('click', function() {
+        if (box2) box2.addEventListener('click', function() {
             hideBoxes('box2');
             document.getElementById('boxNumber').value = '2';
             document.getElementById('numForm').style.display = 'block';
         });
 
-        document.getElementById('box3').addEventListener('click', function() {
+        if (box3) box3.addEventListener('click', function() {
             hideBoxes('box3');
             document.getElementById('boxNumber').value = '3';
             document.getElementById('numForm').style.display = 'block';
