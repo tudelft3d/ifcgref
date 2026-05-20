@@ -9,17 +9,237 @@
     <style>
         body { margin: 0; padding: 0; }
         html, body, #map { height: 100%; }
-        #changeMapButton {
+        .viewer-controls {
             position: absolute;
-            bottom: 10px;  /* Change this from top to bottom */
-            left: 10px;
-            z-index: 10;
-            padding: 10px;
-            background-color: #008CBA;
-            color: white;
-            border: none;
-            cursor: pointer;
+            left: 12px;
+            bottom: 12px;
+            z-index: 30;
+            width: min(220px, calc(100vw - 24px));
+            padding: 0;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.94);
+            color: #222;
+            border: 1px solid rgba(32, 38, 46, 0.16);
+            border-radius: 8px;
+            box-shadow: 0 10px 28px rgba(20, 28, 38, 0.22);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            backdrop-filter: blur(8px);
+            overflow: hidden;
+            transition: width 0.18s ease, box-shadow 0.18s ease;
+        }
+        .viewer-controls.is-open {
+            width: min(360px, calc(100vw - 24px));
+        }
+        .viewer-controls-toggle {
+            width: 100%;
+            min-height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px;
+            box-sizing: border-box;
+            border: 0;
+            background: transparent;
+            color: #111827;
+            cursor: pointer;
+            font: inherit;
+            font-size: 13px;
+            font-weight: 650;
+            letter-spacing: 0;
+            text-align: left;
+            text-transform: none;
+        }
+        .viewer-controls-toggle-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+        .viewer-controls-toggle-icon {
+            width: 15px;
+            height: 15px;
+            color: #46505c;
+            flex: 0 0 auto;
+        }
+        .viewer-controls-toggle::after {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-right: 2px solid #46505c;
+            border-bottom: 2px solid #46505c;
+            transform: rotate(-45deg);
+            transition: transform 0.18s ease;
+            flex: 0 0 auto;
+        }
+        .viewer-controls.is-open .viewer-controls-toggle::after {
+            transform: rotate(45deg);
+        }
+        .viewer-controls-toggle:focus-visible {
+            outline: 2px solid #1f7a8c;
+            outline-offset: -2px;
+        }
+        .viewer-controls-body {
+            padding: 0 12px 12px;
+        }
+        .viewer-controls-body[hidden] {
+            display: none;
+        }
+        .control-row {
+            display: grid;
+            gap: 8px;
+        }
+        .control-row + .control-row {
+            margin-top: 12px;
+        }
+        .control-label {
+            display: block;
+            color: #46505c;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+        #mapStyleSelect {
+            width: 100%;
+            min-height: 38px;
+            padding: 8px 34px 8px 10px;
+            color: #111827;
+            background-color: #fff;
+            border: 1px solid #b9c2cc;
+            border-radius: 6px;
+            cursor: pointer;
+            font: inherit;
+        }
+        #mapStyleSelect:focus-visible {
+            outline: 2px solid #1f7a8c;
+            outline-offset: 2px;
+        }
+        .segmented-control {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            padding: 4px;
+            background: #e8edf2;
+            border: 1px solid #c5cdd6;
+            border-radius: 8px;
+        }
+        .segmented-control input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .segment-option {
+            min-height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 8px;
+            box-sizing: border-box;
+            border-radius: 6px;
+            color: #2f3a46;
+            cursor: pointer;
+            font-size: 13px;
+            line-height: 1.15;
+            text-align: center;
+            user-select: none;
+        }
+        .segment-option:has(input:checked) {
+            background: #fff;
+            color: #0f172a;
+            box-shadow: 0 1px 4px rgba(20, 28, 38, 0.18);
+            font-weight: 600;
+        }
+        .segment-option:focus-within {
+            outline: 2px solid #1f7a8c;
+            outline-offset: 2px;
+        }
+        .checkbox-option {
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            box-sizing: border-box;
+            border: 1px solid #c5cdd6;
+            border-radius: 6px;
+            background: #fff;
+            color: #1f2937;
+            cursor: pointer;
+            font-size: 13px;
+            line-height: 1.2;
+            user-select: none;
+        }
+        .checkbox-option input {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            accent-color: #1f7a8c;
+        }
+        .checkbox-option:focus-within {
+            outline: 2px solid #1f7a8c;
+            outline-offset: 2px;
+        }
+        .map-action-button {
+            position: absolute;
+            top: 78px;
+            right: 12px;
+            z-index: 25;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: 1px solid rgba(32, 38, 46, 0.18);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.94);
+            color: #172033;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(20, 28, 38, 0.20);
+            backdrop-filter: blur(8px);
+            text-transform: none;
+        }
+        .map-action-button:hover:not(:disabled) {
+            background: #f4f7fa;
+            border-color: #8b99a8;
+        }
+        .map-action-button:disabled {
+            color: #818b98;
+            cursor: not-allowed;
+            opacity: 0.72;
+        }
+        .map-action-button:focus-visible {
+            outline: 2px solid #1f7a8c;
+            outline-offset: 2px;
+        }
+        .map-action-button svg {
+            width: 14px;
+            height: 14px;
+        }
+        .map-action-button::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: 50%;
+            right: calc(100% + 8px);
+            transform: translateY(-50%);
+            min-width: max-content;
+            max-width: 180px;
+            padding: 6px 8px;
+            border-radius: 5px;
+            background: rgba(17, 24, 39, 0.94);
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 12px;
+            line-height: 1.2;
+            opacity: 0;
+            pointer-events: none;
+            white-space: nowrap;
+            transition: opacity 0.14s ease, transform 0.14s ease;
+        }
+        .map-action-button:hover::after,
+        .map-action-button:focus-visible::after {
+            opacity: 1;
+            transform: translate(-2px, -50%);
         }
         #logo1 {
             position: absolute;
@@ -37,22 +257,90 @@
             width: 100px;
 
         }
+        #loadingStatus {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 30;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.94);
+            color: #222;
+            border-radius: 6px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        @media (max-width: 560px) {
+            .viewer-controls {
+                left: 8px;
+                right: 8px;
+                bottom: 8px;
+                width: min(220px, calc(100vw - 16px));
+            }
+            .viewer-controls.is-open {
+                width: auto;
+            }
+            .segment-option {
+                font-size: 12px;
+            }
+            .map-action-button {
+                top: 74px;
+                right: 8px;
+            }
+        }
     </style>
 </head>
 <body>
 
 <div id="map"></div>
-<div id="radioGroup" style="position: absolute; bottom: 60px; left: 10px; z-index: 10;">
-    <label>
-        <input type="radio" name="toggle" value="0" checked> BIM local zero
-    </label>
-    <label>
-        <input type="radio" name="toggle" value="1"> BIM lowest level
-    </label>
+<div id="loadingStatus">Loading IFC model...</div>
+<div class="viewer-controls" id="viewerControls" aria-label="Viewer Setting">
+    <button class="viewer-controls-toggle" id="viewerSettingsToggle" type="button" aria-expanded="false" aria-controls="viewerSettingsBody">
+        <span class="viewer-controls-toggle-label">
+            <svg class="viewer-controls-toggle-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"></path>
+                <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2.1 2.1 0 0 1-2.97 2.97l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.1 1.65V21.4a2.1 2.1 0 0 1-4.2 0v-.06a1.8 1.8 0 0 0-1.18-1.65 1.8 1.8 0 0 0-1.98.36l-.04.04a2.1 2.1 0 0 1-2.97-2.97l.04-.04A1.8 1.8 0 0 0 3.7 15a1.8 1.8 0 0 0-1.65-1.1H2a2.1 2.1 0 0 1 0-4.2h.06A1.8 1.8 0 0 0 3.7 8.6a1.8 1.8 0 0 0-.36-1.98l-.04-.04a2.1 2.1 0 0 1 2.97-2.97l.04.04a1.8 1.8 0 0 0 1.98.36H8.3A1.8 1.8 0 0 0 9.4 2.36V2.3a2.1 2.1 0 0 1 4.2 0v.06a1.8 1.8 0 0 0 1.18 1.65 1.8 1.8 0 0 0 1.98-.36l.04-.04a2.1 2.1 0 0 1 2.97 2.97l-.04.04a1.8 1.8 0 0 0-.36 1.98v.01a1.8 1.8 0 0 0 1.65 1.1H21a2.1 2.1 0 0 1 0 4.2h-.06A1.8 1.8 0 0 0 19.4 15Z"></path>
+            </svg>
+            <span>Viewer Setting</span>
+        </span>
+    </button>
+    <div class="viewer-controls-body" id="viewerSettingsBody" hidden>
+        <div class="control-row">
+            <label class="control-label" for="mapStyleSelect">Map layer</label>
+            <select id="mapStyleSelect" aria-label="Map layer"></select>
+        </div>
+        <div class="control-row">
+            <span class="control-label" id="bimModeLabel">Elevation reference</span>
+            <div class="segmented-control" id="radioGroup" role="radiogroup" aria-labelledby="bimModeLabel">
+                <label class="segment-option">
+                    <input type="radio" name="toggle" value="0" checked>
+                    Local zero
+                </label>
+                <label class="segment-option">
+                    <input type="radio" name="toggle" value="1">
+                    Lowest level
+                </label>
+            </div>
+        </div>
+        <div class="control-row">
+            <span class="control-label" id="ifcContentLabel">IFC content</span>
+            <label class="checkbox-option" for="showSpacesToggle">
+                <input type="checkbox" id="showSpacesToggle" autocomplete="off" aria-labelledby="ifcContentLabel showSpacesText">
+                <span id="showSpacesText">Show spaces</span>
+            </label>
+        </div>
+    </div>
 </div>
-<button id="changeMapButton">Change Map</button>
 <img id="logo1" src="../static/images/logo1.png" alt="logo1" />
 <a href="https://3d.bk.tudelft.nl/"><img id="logo2" src="../static/images/logo2.png" alt="logo2"> </a>
+<button class="map-action-button" id="zoomToBimButton" type="button" disabled aria-label="Zoom to BIM Extents" data-tooltip="Zoom to BIM Extents">
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 3h6v6"></path>
+        <path d="m21 3-7 7"></path>
+        <path d="M9 21H3v-6"></path>
+        <path d="m3 21 7-7"></path>
+    </svg>
+</button>
 <script src='https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.js'></script>
 <link rel='stylesheet' href='https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.css' />
 
@@ -63,7 +351,7 @@
             "three/addons/": "/templates/jsm/",
             "three/examples/jsm/utils/BufferGeometryUtils": "/templates/jsm/utils/BufferGeometryUtils.js",
             "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.5.23/build/index.module.js",
-            "web-ifc": "https://cdn.jsdelivr.net/npm/web-ifc@0.0.36/web-ifc-api.js",
+            "web-ifc": "https://cdn.jsdelivr.net/npm/web-ifc@0.0.77/web-ifc-api.js",
             "web-ifc-three": "https://cdn.jsdelivr.net/npm/web-ifc-three@0.0.126/IFCLoader.js"
         }
     }
@@ -87,7 +375,8 @@
     var Rot = '{{Rotate}}';
     var sc = '{{Scale}}';
     var scCRS = '{{ScaleCRS}}';
-    var lz = '{{LowestLevel}}'
+    var lz = Number('{{LowestLevel}}') || 0;
+    var mapTilerStyles = {{ MapTilerStyles|default([], true)|tojson }};
     var org = [0,0,0];
 
 
@@ -96,23 +385,162 @@
     import { IFCLoader } from 'web-ifc-three';
     import { IFCSPACE } from 'web-ifc';
 
-    let scene, renderer, map, customLayer, ifcLoader;
+    let scene, renderer, map, customLayer, ifcLoader, modelTransformState, BIMscaleState, currentIfcModel, bimLngLatBounds;
+    let mapStyleApplyTimer = null;
+    let applyingMapStyle = false;
+    let verticalOffset = 0;
+    let verticalMode = '0';
     let currentStyleIndex = 0;
+    let ifcLoadVersion = 0;
 
-    const styles = [
-        'https://api.maptiler.com/maps/openstreetmap/style.json?key=0WhPYrwttynpLXQDYYip',
-        'https://api.maptiler.com/maps/streets-v2/style.json?key=0WhPYrwttynpLXQDYYip',
-        'https://api.maptiler.com/maps/satellite/style.json?key=0WhPYrwttynpLXQDYYip',
+    const cartoVoyagerStyle = {
+        version: 8,
+        sources: {
+            'carto-voyager': {
+                type: 'raster',
+                tiles: [
+                    'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                    'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                    'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                    'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+                ],
+                tileSize: 256,
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+            }
+        },
+        layers: [
+            {
+                id: 'carto-voyager',
+                type: 'raster',
+                source: 'carto-voyager'
+            }
+        ]
+    };
+
+    const cartoLightStyle = {
+        version: 8,
+        sources: {
+            'carto-light': {
+                type: 'raster',
+                tiles: [
+                    'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                    'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                    'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                    'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+                ],
+                tileSize: 256,
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+            }
+        },
+        layers: [
+            {
+                id: 'carto-light',
+                type: 'raster',
+                source: 'carto-light'
+            }
+        ]
+    };
+
+    const mapStyles = [
+        {
+            id: 'carto-voyager',
+            label: 'CARTO Voyager',
+            style: cartoVoyagerStyle
+        },
+        {
+            id: 'carto-light',
+            label: 'CARTO Light',
+            style: cartoLightStyle
+        },
+        {
+            id: 'pdok-brt',
+            label: 'PDOK BRT background',
+            style: 'https://api.pdok.nl/kadaster/brt-achtergrondkaart/ogc/v1/styles/standaard__webmercatorquad?f=mapbox'
+        },
+        {
+            id: 'pdok-brt-no-labels',
+            label: 'PDOK BRT no labels',
+            style: 'https://api.pdok.nl/kadaster/brt-achtergrondkaart/ogc/v1/styles/standaard_zonder_labels__webmercatorquad?f=mapbox'
+        },
+        {
+            id: 'pdok-brt-parcels',
+            label: 'PDOK BRT + cadastral parcels',
+            style: 'https://api.pdok.nl/kadaster/brt-achtergrondkaart/ogc/v1/styles/standaard__webmercatorquad?f=mapbox',
+            overlays: ['https://api.pdok.nl/kadaster/brk-kadastrale-kaart/ogc/v1/styles/standaardvisualisatie__webmercatorquad?f=mapbox']
+        },
+        {
+            id: 'pdok-parcels',
+            label: 'PDOK cadastral parcels',
+            style: 'https://api.pdok.nl/kadaster/brk-kadastrale-kaart/ogc/v1/styles/standaardvisualisatie__webmercatorquad?f=mapbox'
+        },
+        {
+            id: 'pdok-brt-dark',
+            label: 'PDOK BRT dark',
+            style: 'https://api.pdok.nl/kadaster/brt-achtergrondkaart/ogc/v1/styles/darkmode__webmercatorquad?f=mapbox'
+        }
     ];
+    if (mapTilerStyles.length) {
+        mapStyles.splice(2, 0, ...mapTilerStyles);
+    }
+    const viewerControls = document.getElementById('viewerControls');
+    const viewerSettingsToggle = document.getElementById('viewerSettingsToggle');
+    const viewerSettingsBody = document.getElementById('viewerSettingsBody');
+    const mapStyleSelect = document.getElementById('mapStyleSelect');
+    const zoomToBimButton = document.getElementById('zoomToBimButton');
+    const showSpacesToggleControl = document.getElementById('showSpacesToggle');
+    showSpacesToggleControl.checked = false;
+    mapStyles.forEach((styleConfig, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = styleConfig.label;
+        mapStyleSelect.appendChild(option);
+    });
+
+    function getMapStyle(styleConfig) {
+        return typeof styleConfig.style === 'string' ? styleConfig.style : JSON.parse(JSON.stringify(styleConfig.style));
+    }
+
+    async function addOverlayStyle(styleUrl, prefix) {
+        const response = await fetch(styleUrl);
+        if (!response.ok) {
+            throw new Error(`Could not load overlay style: ${styleUrl}`);
+        }
+        const overlayStyle = await response.json();
+
+        Object.entries(overlayStyle.sources || {}).forEach(([sourceId, source]) => {
+            const prefixedSourceId = `${prefix}-${sourceId}`;
+            if (!map.getSource(prefixedSourceId)) {
+                map.addSource(prefixedSourceId, source);
+            }
+        });
+
+        (overlayStyle.layers || []).forEach((layer) => {
+            if (layer.type === 'background' || !layer.source) {
+                return;
+            }
+            const layerConfig = JSON.parse(JSON.stringify(layer));
+            layerConfig.id = `${prefix}-${layer.id}`;
+            layerConfig.source = `${prefix}-${layer.source}`;
+            if (!map.getLayer(layerConfig.id)) {
+                map.addLayer(layerConfig);
+            }
+        });
+    }
+
+    async function addSelectedOverlays() {
+        const selectedStyle = mapStyles[currentStyleIndex];
+        const overlays = selectedStyle.overlays || [];
+        for (let index = 0; index < overlays.length; index += 1) {
+            await addOverlayStyle(overlays[index], `${selectedStyle.id}-overlay-${index}`);
+        }
+    }
 
     async function init() {
 
         // Initialize Map
         map = new maplibregl.Map({
             container: 'map',
-            // style: 'https://api.maptiler.com/maps/streets-v2/style.json?key=0WhPYrwttynpLXQDYYip',
-            // style: 'https://api.maptiler.com/maps/openstreetmap/style.json?key=0WhPYrwttynpLXQDYYip',
-            style: styles[currentStyleIndex],
+            style: getMapStyle(mapStyles[currentStyleIndex]),
             zoom: 18,
             center: [Long, Lat],
             pitch: 60,
@@ -139,6 +567,8 @@
             scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits()
         };
         var BIMscale = modelTransform.scale*scCRS*sc*0.9985;
+        modelTransformState = modelTransform;
+        BIMscaleState = BIMscale;
         // Scene
         scene = new THREE.Scene();
         // scene.background = new THREE.Color(0x8cc7de);
@@ -155,29 +585,178 @@
         const ambientLight = new THREE.AmbientLight(0xffffee, 0.75);
         scene.add(ambientLight);
 
-        // Setup IFC Loader
-        ifcLoader = new IFCLoader();
-        await ifcLoader.ifcManager.setWasmPath('https://cdn.jsdelivr.net/npm/web-ifc@0.0.36/', true);
-        await ifcLoader.ifcManager.parser.setupOptionalCategories({ [IFCSPACE]: false });
-        await ifcLoader.ifcManager.applyWebIfcConfig({ USE_FAST_BOOLS: true });
-        const filePath = '/uploads/' + fn;
-        ifcLoader.load(filePath, function (model) {
-            model.mesh.position.set(-OGx, 0, OGy);
-            scene.add(model.mesh);
-            const boundingBox = new THREE.Box3().setFromObject(model.mesh);
-            lz = boundingBox.min.y;
-            render();
-        });
-
         // Renderer
         renderer = new THREE.WebGLRenderer({
             canvas: map.getCanvas(),
             context: map.painter.context.gl,
             antialias: true
         });
+        window.ifcgrefMap = map;
         renderer.autoClear = false;
 
-        customLayer = {
+        customLayer = makeCustomLayer(modelTransformState, BIMscaleState);
+
+        map.on('style.load', scheduleSelectedMapStyleApply);
+        map.on('styledata', scheduleSelectedMapStyleApply);
+        scheduleSelectedMapStyleApply();
+
+        await loadIfcModel(showSpacesToggleControl.checked);
+
+        window.addEventListener('resize', onWindowResize);
+        render();
+    }
+
+    function disposeObject(object) {
+        if (!object) {
+            return;
+        }
+        object.traverse((child) => {
+            if (child.geometry) {
+                child.geometry.dispose();
+            }
+            const materials = Array.isArray(child.material) ? child.material : [child.material];
+            materials.filter(Boolean).forEach((material) => {
+                Object.values(material).forEach((value) => {
+                    if (value && typeof value.dispose === 'function') {
+                        value.dispose();
+                    }
+                });
+                material.dispose();
+            });
+        });
+    }
+
+    function removeCurrentIfcModel() {
+        if (!currentIfcModel) {
+            return;
+        }
+        const object = currentIfcModel.mesh || currentIfcModel;
+        scene.remove(object);
+        disposeObject(object);
+        currentIfcModel = null;
+        setBimBounds(null);
+    }
+
+    function setBimBounds(bounds) {
+        bimLngLatBounds = bounds;
+        zoomToBimButton.disabled = !bounds;
+    }
+
+    function getBimMercatorMatrix() {
+        const rotationX = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1, 0, 0), modelTransformState.rotateX);
+        const rotationY = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0, 1, 0), modelTransformState.rotateY);
+        const rotationZ = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0, 0, 1), modelTransformState.rotateZ);
+        return new THREE.Matrix4()
+            .makeTranslation(modelTransformState.translateX, modelTransformState.translateY, modelTransformState.translateZ)
+            .scale(new THREE.Vector3(BIMscaleState, -BIMscaleState, BIMscaleState))
+            .multiply(rotationX)
+            .multiply(rotationY)
+            .multiply(rotationZ);
+    }
+
+    function calculateBimLngLatBounds(object) {
+        object.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(object);
+        if (box.isEmpty()) {
+            return null;
+        }
+
+        const transform = getBimMercatorMatrix();
+        const bounds = new maplibregl.LngLatBounds();
+        let hasBounds = false;
+        const corners = [
+            [box.min.x, box.min.y, box.min.z],
+            [box.min.x, box.min.y, box.max.z],
+            [box.min.x, box.max.y, box.min.z],
+            [box.min.x, box.max.y, box.max.z],
+            [box.max.x, box.min.y, box.min.z],
+            [box.max.x, box.min.y, box.max.z],
+            [box.max.x, box.max.y, box.min.z],
+            [box.max.x, box.max.y, box.max.z],
+        ];
+
+        corners.forEach(([x, y, z]) => {
+            const point = new THREE.Vector3(x, y, z).applyMatrix4(transform);
+            const lngLat = new maplibregl.MercatorCoordinate(point.x, point.y, point.z).toLngLat();
+            if (Number.isFinite(lngLat.lng) && Number.isFinite(lngLat.lat)) {
+                bounds.extend(lngLat);
+                hasBounds = true;
+            }
+        });
+
+        return hasBounds ? bounds : null;
+    }
+
+    async function loadIfcModel(includeSpaces) {
+        const loadVersion = ++ifcLoadVersion;
+        const loadingStatus = document.getElementById('loadingStatus');
+        const showSpacesToggle = document.getElementById('showSpacesToggle');
+        loadingStatus.style.display = 'block';
+        loadingStatus.textContent = includeSpaces ? 'Loading IFC model with spaces...' : 'Loading IFC model...';
+        if (showSpacesToggle) {
+            showSpacesToggle.disabled = true;
+        }
+
+        removeCurrentIfcModel();
+        ifcLoader = new IFCLoader();
+        await ifcLoader.ifcManager.setWasmPath('https://cdn.jsdelivr.net/npm/web-ifc@0.0.77/', true);
+        await ifcLoader.ifcManager.parser.setupOptionalCategories({ [IFCSPACE]: includeSpaces });
+        await ifcLoader.ifcManager.applyWebIfcConfig({ USE_FAST_BOOLS: true });
+
+        const filePath = '/uploads/' + encodeURIComponent(fn);
+        ifcLoader.load(filePath, function (model) {
+            if (loadVersion !== ifcLoadVersion) {
+                disposeObject(model.mesh || model);
+                return;
+            }
+            currentIfcModel = model;
+            model.mesh.position.set(-OGx, 0, OGy);
+            scene.add(model.mesh);
+            const boundingBox = new THREE.Box3().setFromObject(model.mesh);
+            lz = boundingBox.min.y;
+            setBimBounds(calculateBimLngLatBounds(model.mesh));
+            applyVerticalMode();
+            loadingStatus.style.display = 'none';
+            if (showSpacesToggle) {
+                showSpacesToggle.disabled = false;
+            }
+            map.triggerRepaint();
+            render();
+        }, function (event) {
+            if (loadVersion !== ifcLoadVersion) {
+                return;
+            }
+            if (event.total) {
+                const percent = Math.round((event.loaded / event.total) * 100);
+                const suffix = includeSpaces ? ' with spaces' : '';
+                loadingStatus.textContent = `Loading IFC model${suffix}... ${percent}%`;
+            }
+        }, function (error) {
+            if (loadVersion !== ifcLoadVersion) {
+                return;
+            }
+            console.error('Could not load IFC model:', error);
+            const detail = error && (error.message || error.toString());
+            loadingStatus.textContent = detail ? `Could not load IFC model: ${detail}` : 'Could not load IFC model.';
+            if (showSpacesToggle) {
+                showSpacesToggle.disabled = false;
+            }
+        });
+    }
+
+    function zoomToBimExtents() {
+        if (!map || !bimLngLatBounds) {
+            return;
+        }
+        map.fitBounds(bimLngLatBounds, {
+            padding: { top: 90, right: 90, bottom: 140, left: 90 },
+            maxZoom: 20,
+            duration: 900
+        });
+    }
+
+    function makeCustomLayer(modelTransform, BIMscale) {
+        return {
             id: '3d-model',
             type: 'custom',
             renderingMode: '3d',
@@ -193,34 +772,94 @@
                 const rotationZ = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0, 0, 1), modelTransform.rotateZ);
 
                 const m = new THREE.Matrix4().fromArray(matrix);
+                const translatedZ = modelTransform.translateZ + (verticalOffset * BIMscale);
                 const l = new THREE.Matrix4()
-                    .makeTranslation(modelTransform.translateX, modelTransform.translateY, modelTransform.translateZ)
+                    .makeTranslation(modelTransform.translateX, modelTransform.translateY, translatedZ)
                     .scale(new THREE.Vector3(BIMscale,-BIMscale,BIMscale))
                     .multiply(rotationX)
                     .multiply(rotationY)
                     .multiply(rotationZ);
 
                 this.camera.projectionMatrix = m.multiply(l);
-                const clippingPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), org[2]);
-                this.renderer.clippingPlanes = [clippingPlane];
-                this.renderer.localClippingEnabled = true;
+                if (verticalMode === '0') {
+                    const clippingPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+                    this.renderer.clippingPlanes = [clippingPlane];
+                    this.renderer.localClippingEnabled = true;
+                } else {
+                    this.renderer.clippingPlanes = [];
+                    this.renderer.localClippingEnabled = false;
+                }
                 this.renderer.resetState();
                 this.renderer.render(this.scene, this.camera);
                 this.map.triggerRepaint();
             }
         };
+    }
 
-        map.on('style.load', () => {
-            map.addLayer(customLayer);
+    function scheduleSelectedMapStyleApply() {
+        if (mapStyleApplyTimer) {
+            window.clearTimeout(mapStyleApplyTimer);
+        }
+        mapStyleApplyTimer = window.setTimeout(applySelectedMapStyle, 100);
+    }
+
+    function scheduleBimLayerTopChecks() {
+        [150, 750, 2000].forEach((delay) => {
+            window.setTimeout(() => {
+                try {
+                    ensureBimLayerOnTop();
+                    map.triggerRepaint();
+                } catch (error) {
+                    scheduleSelectedMapStyleApply();
+                }
+            }, delay);
         });
+    }
 
-        window.addEventListener('resize', onWindowResize);
-        render();
+    async function applySelectedMapStyle() {
+        if (applyingMapStyle) {
+            scheduleSelectedMapStyleApply();
+            return;
+        }
+        if (!map || !renderer || !scene || !modelTransformState || !BIMscaleState) {
+            scheduleSelectedMapStyleApply();
+            return;
+        }
+        applyingMapStyle = true;
+        try {
+            await addSelectedOverlays();
+        } catch (error) {
+            console.warn(error);
+        }
+
+        try {
+            ensureBimLayerOnTop();
+            map.triggerRepaint();
+        } catch (error) {
+            scheduleSelectedMapStyleApply();
+        } finally {
+            applyingMapStyle = false;
+        }
+    }
+
+    function ensureBimLayerOnTop() {
+        if (!map || !renderer || !scene || !modelTransformState || !BIMscaleState) {
+            return;
+        }
+        if (map.getLayer('3d-model')) {
+            map.removeLayer('3d-model');
+        }
+        // Re-adding the custom layer after the selected base map and overlays makes
+        // the BIM model the final layer rendered by MapLibre.
+        customLayer = makeCustomLayer(modelTransformState, BIMscaleState);
+        map.addLayer(customLayer);
     }
 
     function onWindowResize() {
-        customLayer.camera.aspect = window.innerWidth / window.innerHeight;
-        customLayer.camera.updateProjectionMatrix();
+        if (customLayer && customLayer.camera) {
+            customLayer.camera.aspect = window.innerWidth / window.innerHeight;
+            customLayer.camera.updateProjectionMatrix();
+        }
         renderer.setSize(window.innerWidth, window.innerHeight);
         render();
     }
@@ -231,27 +870,54 @@
         }
     }
 
-    async function toggleMapStyle() {
-        currentStyleIndex = (currentStyleIndex + 1) % styles.length;
-        map.setStyle(styles[currentStyleIndex]);
-        init();
-        renderer.render(scene, customLayer.camera);
+    function applyVerticalMode() {
+        const selectedMode = document.querySelector('input[name="toggle"]:checked')?.value || '0';
+        verticalMode = selectedMode;
+        verticalOffset = selectedMode === '1' ? -lz : 0;
+        if (map) {
+            map.triggerRepaint();
+        }
+        render();
+    }
+
+    async function selectMapStyle() {
+        currentStyleIndex = Number(mapStyleSelect.value);
+        map.setStyle(getMapStyle(mapStyles[currentStyleIndex]));
+        scheduleSelectedMapStyleApply();
+        scheduleBimLayerTopChecks();
     }
     init();
-    document.getElementById('changeMapButton').addEventListener('click', toggleMapStyle);
+    viewerSettingsToggle.addEventListener('click', function() {
+        const isOpen = viewerControls.classList.toggle('is-open');
+        viewerSettingsToggle.setAttribute('aria-expanded', String(isOpen));
+        viewerSettingsBody.hidden = !isOpen;
+    });
+
+    viewerSettingsToggle.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && viewerControls.classList.contains('is-open')) {
+            viewerControls.classList.remove('is-open');
+            viewerSettingsToggle.setAttribute('aria-expanded', 'false');
+            viewerSettingsBody.hidden = true;
+            viewerSettingsToggle.focus();
+        }
+    });
+
+    mapStyleSelect.addEventListener('change', selectMapStyle);
+    zoomToBimButton.addEventListener('click', zoomToBimExtents);
+
+    showSpacesToggleControl.addEventListener('change', function(event) {
+        loadIfcModel(event.target.checked).catch((error) => {
+            console.error('Could not reload IFC model:', error);
+            const loadingStatus = document.getElementById('loadingStatus');
+            loadingStatus.style.display = 'block';
+            loadingStatus.textContent = 'Could not reload IFC model.';
+            event.target.disabled = false;
+        });
+    });
     
     document.querySelectorAll('input[name="toggle"]').forEach((elem) => {
         elem.addEventListener('change', function(event) {
-            const selectedValue = event.target.value;
-            console.log("Radio button selected value: ", selectedValue);
-            if (selectedValue === '1') {
-                org[2] = -lz;
-            } else {
-                // Optionally reset org[2] to its default value when it's not 1
-                org[2] = 0;
-            }
-            init();
-            render();        
+            applyVerticalMode();
         });
     });
 
