@@ -44,8 +44,8 @@ class Ifc2x3GeoreferencingTests(unittest.TestCase):
                     model = make_model()
                     writer(model, *TRANSFORM, map_unit=unit)
                     model = ifcopenshell.file.from_string(model.to_string())
-                    crs = properties(model, "ePset_ProjectedCRS")
-                    conversion = properties(model, "ePset_MapConversion")
+                    crs = properties(model, "ePSet_ProjectedCRS")
+                    conversion = properties(model, "ePSet_MapConversion")
                     self.assertEqual(crs["Name"].NominalValue.wrappedValue, "EPSG:7415")
                     self.assertEqual(crs["MapUnit"].NominalValue.is_a(), "IfcIdentifier")
                     self.assertEqual(crs["MapUnit"].NominalValue.wrappedValue, unit)
@@ -65,10 +65,10 @@ class Ifc2x3GeoreferencingTests(unittest.TestCase):
                 with self.subTest(writer=writer.__name__, kwargs=kwargs):
                     model = make_model()
                     writer(model, *TRANSFORM, **kwargs)
-                    crs = properties(model, "ePset_ProjectedCRS")
+                    crs = properties(model, "ePSet_ProjectedCRS")
                     self.assertEqual(set(crs), {"Name"})
                     self.assertEqual(
-                        properties(model, "ePset_MapConversion")["Scale"].NominalValue.wrappedValue,
+                        properties(model, "ePSet_MapConversion")["Scale"].NominalValue.wrappedValue,
                         SCALE,
                     )
 
@@ -79,14 +79,14 @@ class Ifc2x3GeoreferencingTests(unittest.TestCase):
             with self.subTest(kwargs=kwargs):
                 georef.set_mapconversion_crs(model, *TRANSFORM, **kwargs)
                 self.assertEqual(
-                    properties(model, "ePset_ProjectedCRS")["MapUnit"].NominalValue.wrappedValue,
+                    properties(model, "ePSet_ProjectedCRS")["MapUnit"].NominalValue.wrappedValue,
                     "metre",
                 )
 
     def test_integer_scale_uses_template_real_type(self):
         model = make_model()
         georef.set_mapconversion_crs(model, *TRANSFORM[:-1], 1)
-        scale = properties(model, "ePset_MapConversion")["Scale"].NominalValue
+        scale = properties(model, "ePSet_MapConversion")["Scale"].NominalValue
         self.assertEqual(scale.is_a(), "IfcReal")
         self.assertEqual(scale.wrappedValue, 1.0)
 
@@ -95,10 +95,10 @@ class Ifc2x3GeoreferencingTests(unittest.TestCase):
             str(Path(georef.__file__).with_name("IFC2X3_Geolocation.ifc"))
         )
         psets = {p.Name: p for p in template.by_type("IfcPropertySetTemplate")}
-        crs = {p.Name: p for p in psets["EPset_ProjectedCRS"].HasPropertyTemplates}
-        conversion = {p.Name: p for p in psets["EPset_MapConversion"].HasPropertyTemplates}
+        crs = {p.Name: p for p in psets["ePSet_ProjectedCRS"].HasPropertyTemplates}
+        conversion = {p.Name: p for p in psets["ePSet_MapConversion"].HasPropertyTemplates}
         self.assertEqual(crs["MapUnit"].PrimaryMeasureType, "IfcIdentifier")
-        self.assertIn(template.by_id(16), psets["EPset_MapConversion"].HasPropertyTemplates)
+        self.assertIn(template.by_id(16), psets["ePSet_MapConversion"].HasPropertyTemplates)
         self.assertEqual(conversion["Scale"].PrimaryMeasureType, "IfcReal")
 
     def test_ifc4_behavior_is_unchanged(self):
@@ -166,13 +166,13 @@ class WorkflowGeoreferencingTests(unittest.TestCase):
                     Mock(), self.filename, self.form, job_context
                 )
                 output = self.read_output(result)
-                crs = properties(output, "ePset_ProjectedCRS")
+                crs = properties(output, "ePSet_ProjectedCRS")
                 if unit is None:
                     self.assertNotIn("MapUnit", crs)
                 else:
                     self.assertEqual(crs["MapUnit"].NominalValue.wrappedValue, unit)
                 self.assertEqual(
-                    properties(output, "ePset_MapConversion")["Scale"].NominalValue.wrappedValue,
+                    properties(output, "ePSet_MapConversion")["Scale"].NominalValue.wrappedValue,
                     0.001,
                 )
 
@@ -180,7 +180,7 @@ class WorkflowGeoreferencingTests(unittest.TestCase):
         result = self.workflow.write_georeferenced_ifc(
             Mock(), self.filename, self.form, self.context
         )
-        self.assertNotIn("MapUnit", properties(self.read_output(result), "ePset_ProjectedCRS"))
+        self.assertNotIn("MapUnit", properties(self.read_output(result), "ePSet_ProjectedCRS"))
 
     def test_solver_mixed_scale_is_preserved_exactly_in_output(self):
         context = dict(self.context, rows=2, mapunit="metre")
@@ -194,11 +194,11 @@ class WorkflowGeoreferencingTests(unittest.TestCase):
             )
         solver.assert_called_once()
         output = self.read_output(result)
-        scale = properties(output, "ePset_MapConversion")["Scale"].NominalValue
+        scale = properties(output, "ePSet_MapConversion")["Scale"].NominalValue
         self.assertEqual(scale.is_a(), "IfcReal")
         self.assertEqual(scale.wrappedValue, SCALE)
         self.assertEqual(
-            properties(output, "ePset_ProjectedCRS")["MapUnit"].NominalValue.wrappedValue,
+            properties(output, "ePSet_ProjectedCRS")["MapUnit"].NominalValue.wrappedValue,
             "metre",
         )
 

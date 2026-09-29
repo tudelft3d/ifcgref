@@ -371,11 +371,8 @@ def georef(ifc_file):
             message += "IFC file is georeferenced.\n"
             geo = True
     if ifc_file.schema == 'IFC2X3':
-        site = get_ifc_site(ifc_file)
-        psets = ifcopenshell.util.element.get_psets(site)
-        has_map_conversion = 'ePSet_MapConversion' in psets or 'ePset_MapConversion' in psets
-        has_projected_crs = 'ePSet_ProjectedCRS' in psets or 'ePset_ProjectedCRS' in psets
-        if has_map_conversion and has_projected_crs:
+        mapconversion, crs = georeference_ifc.get_mapconversion_crs(ifc_file)
+        if mapconversion is not None and crs is not None:
             message += "IFC file is georeferenced.\n"
             geo = True
     return message , geo
@@ -676,11 +673,10 @@ def render_georef_result(filename):
     if ifc_file is None:
         return render_template('upload.html', error_message="Could not open the IFC file.")
 
-    message, geo = georef(ifc_file)
-    if not geo:
-        return redirect(url_for('convert_crs', filename=filename))
-
     try:
+        message, geo = georef(ifc_file)
+        if not geo:
+            return redirect(url_for('convert_crs', filename=filename))
         IfcMapConversion, IfcProjectedCRS = get_mapconversion_crs_or_error(ifc_file)
     except ValueError as exc:
         return render_template('convert.html', filename=filename, message=str(exc))
