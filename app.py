@@ -765,6 +765,7 @@ def write_georeferenced_ifc(progress, filename, form_data, context):
     rows = context.get('rows')
     Refl = context.get('Refl')
     target_epsg_value = context.get('target_epsg')
+    map_unit = context.get('mapunit')
 
     if coeff is None or rows is None or target_epsg_value is None:
         raise RuntimeError("Missing georeferencing context. Please restart from the EPSG step.")
@@ -858,6 +859,7 @@ def write_georeferenced_ifc(progress, filename, form_data, context):
         x_axis_abscissa=math.cos(Rotation_solution),
         x_axis_ordinate=math.sin(Rotation_solution),
         scale=S_solution,
+        map_unit=map_unit,
     )
 
     progress('Saving georeferenced IFC', 90)
@@ -1273,6 +1275,7 @@ def calculate(filename):
         'by',
         'bz',
         'target_epsg',
+        'mapunit',
     ])
 
     if context['coeff'] is None or context['rows'] is None or context['target_epsg'] is None:
