@@ -13,7 +13,7 @@ DATA;
 #6=IFCSIMPLEPROPERTYTEMPLATE('3sUHnVnqXElRFuVaLpQj_2',$,'MapProjection','Name by which the map projection is identified. ',.P_SINGLEVALUE.,'IfcIdentifier',$,$,$,$,$,.READWRITE.);
 #7=IFCSIMPLEPROPERTYTEMPLATE('2uW2Bus$H6bAn9liUM2ui7',$,'MapZone','Name by which the map zone, relating to the MapProjection, is identified. ',.P_SINGLEVALUE.,'IfcIdentifier',$,$,$,$,$,.READWRITE.);
 #8=IFCSIMPLEPROPERTYTEMPLATE('0OrG0a0MTCtOrw0$jtMVW3',$,'MapUnit','Unit of the coordinate axes composing the map coordinate system.',.P_SINGLEVALUE.,'IfcIdentifier',$,$,$,$,$,.READWRITE.);
-#9=IFCPROPERTYSETTEMPLATE('0TnwG3fwj8RPXQUzCt31Ti',$,'EPset_MapConversion','An IFC2x3 convention for georeferencing',.PSET_OCCURRENCEDRIVEN.,'IfcSite',(#10,#11,#12,#13,#14,#15));
+#9=IFCPROPERTYSETTEMPLATE('0TnwG3fwj8RPXQUzCt31Ti',$,'EPset_MapConversion','An IFC2x3 convention for georeferencing',.PSET_OCCURRENCEDRIVEN.,'IfcSite',(#10,#11,#12,#13,#14,#15,#16));
 #10=IFCSIMPLEPROPERTYTEMPLATE('2lLZ9987T7phTIqtaQRX9J',$,'TargetCRS','Name by which the coordinate reference system is identified. ',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #11=IFCSIMPLEPROPERTYTEMPLATE('1UJp$3bALBShK9BBCAmy85',$,'Eastings','Specifies the location along the easting of the coordinate system of the target map coordinate reference system. ',.P_SINGLEVALUE.,'IfcLengthMeasure',$,$,$,$,$,.READWRITE.);
 #12=IFCSIMPLEPROPERTYTEMPLATE('3VANBAqv90G8cCyRQ0rFs_',$,'Northings','Specifies the location along the northing of the coordinate system of the target map coordinate reference system. ',.P_SINGLEVALUE.,'IfcLengthMeasure',$,$,$,$,$,.READWRITE.);

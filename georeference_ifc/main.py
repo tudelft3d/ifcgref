@@ -7,6 +7,7 @@ import ifcopenshell.util.pset
 from ifcopenshell.util.element import get_psets
 import math
 from collections import OrderedDict
+from typing import Optional
 
 
 
@@ -17,7 +18,8 @@ def set_mapconversion_crs(ifc_file: ifcopenshell.file,
                           orthogonal_height: float,
                           x_axis_abscissa: float,
                           x_axis_ordinate: float,
-                          scale: float) -> None:
+                          scale: float,
+                          map_unit: Optional[str] = None) -> None:
     """
     This method adds IFC map conversion information to an IfcOpenShell file.
     IFC map conversion information indicates how the local coordinate reference system of the IFC file
@@ -52,10 +54,13 @@ def set_mapconversion_crs(ifc_file: ifcopenshell.file,
         to orient it  according to the target reference system.
         x_axis_abscissa is the component of a unit vector along the x-axis of the local reference system projected
         on the Northings axis of the target reference system.
-    :param scale: float, optional
+    :param scale: float
         indicates the conversion factor to be used, to convert the units of the local coordinate
         system into the units of the target CRS (often expressed in metres).
-        If omitted, a value of 1.0 is assumed.
+        May also include a geometric scale factor; the supplied value is written unchanged.
+    :param map_unit: str, optional
+        name of the target CRS axis unit, written to ePset_ProjectedCRS.MapUnit for IFC2X3.
+        If None, MapUnit is left untouched. This argument does not affect IFC4 output.
     """
     if ifc_file.schema[:4] == 'IFC4':
         set_mapconversion_crs_ifc4(ifc_file, target_crs_epsg_code, eastings, northings, orthogonal_height,
@@ -63,7 +68,7 @@ def set_mapconversion_crs(ifc_file: ifcopenshell.file,
                                    x_axis_ordinate, scale)
     if ifc_file.schema == 'IFC2X3':
         set_mapconversion_crs_ifc2x3(ifc_file, target_crs_epsg_code, eastings, northings, orthogonal_height,
-                                     x_axis_abscissa, x_axis_ordinate, scale)
+                                     x_axis_abscissa, x_axis_ordinate, scale, map_unit)
 
 
 def set_si_units(ifc_file: ifcopenshell.file):
@@ -112,7 +117,8 @@ def set_mapconversion_crs_ifc2x3(ifc_file: ifcopenshell.file,
                                  orthogonal_height: float,
                                  x_axis_abscissa: float,
                                  x_axis_ordinate: float,
-                                 scale: float) -> None:
+                                 scale: float,
+                                 map_unit: Optional[str] = None) -> None:
     # Open the IFC property set template provided by OSarch.org on https://wiki.osarch.org/index.php?title=File:IFC2X3_Geolocation.ifc
     ifc_template = ifcopenshell.open(os.path.join(os.path.dirname(__file__), './IFC2X3_Geolocation.ifc'))
     map_conversion_template = \
@@ -130,7 +136,10 @@ def set_mapconversion_crs_ifc2x3(ifc_file: ifcopenshell.file,
                                                                             'Scale': scale},
                          pset_template=map_conversion_template)
     pset1 = ifcopenshell.api.run("pset.add_pset", ifc_file, product=site, name="ePset_ProjectedCRS")
-    ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset1, properties={'Name': target_crs_epsg_code},
+    crs_properties = {'Name': target_crs_epsg_code}
+    if map_unit is not None:
+        crs_properties['MapUnit'] = map_unit
+    ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset1, properties=crs_properties,
                          pset_template=crs_template)
 
 def get_mapconversion_crs(ifc_file: ifcopenshell.file) -> (object, object):
