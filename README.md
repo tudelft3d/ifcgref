@@ -48,6 +48,33 @@ Coordinate operations become accessible starting from IFC 4. For earlier version
 
 ## Usage
 
+### IFC2X3 georeferencing compatibility
+
+New IFC2X3 output stores `ePSet_MapConversion` and `ePSet_ProjectedCRS` on
+`IfcProject`, following the [buildingSMART Geo-referencing User Guide v2.0,
+section 5.1](https://www.buildingsmart.org/wp-content/uploads/2020/02/User-Guide-for-Geo-referencing-in-IFC-v2.0.pdf).
+The reader and upload detection also accept legacy `IfcSite` property sets and
+case variants such as `ePset_*` and `EPset_*`. A complete project pair takes
+precedence over site data. Without a project pair, the reader accepts complete
+site pairs whose overlapping properties agree; it never joins partial pairs
+from different hosts.
+
+Rewriting an IFC2X3 model migrates compatible site assignments and consolidates
+duplicates into one project pair. Existing optional metadata, property
+descriptions, and explicit units are retained. Property sets shared with other
+objects are copied so those objects keep their original values. Conflicting
+existing values, types, units, or descriptions must be reconciled before a
+rewrite; the writer raises `ValueError` before modifying the model. It requires
+exactly one `IfcProject`.
+
+The optional `map_unit` argument still preserves an existing MapUnit when
+omitted, and Scale is written as `IfcReal` without changing its value or the
+transform calculations. External readers that only inspect `IfcSite` need to
+support project assignments to read newly written files. Other application
+features involving site placement may still require an `IfcSite`.
+
+### Running the application
+
 1. Clone this repository or download the application files to your local machine.
 
 2. Navigate to the project directory in your terminal.
