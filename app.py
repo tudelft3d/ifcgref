@@ -19,9 +19,7 @@ import math
 from scipy.optimize import leastsq
 import pandas as pd
 import json
-from shapely.geometry import Polygon, mapping
 import ifcopenshell.util.placement
-import subprocess
 import time
 import threading
 import traceback
@@ -456,28 +454,11 @@ def infoExt(filename , epsgCode):
         ifcmeter = quantity.to(ureg.meter).magnitude
     except:
         ifcmeter = None
-    # try:
-    #     if ifcunit in unit_mapping:
-    #         quantity = 1 * unit_mapping[ifcunit]
-    #         ifcmeter = quantity.to(ureg.meter).magnitude
-    #     else:
-    #         ifcmeter = None
-    # except:
-    #     ifcmeter = None
     try: 
         quantity = unitmapper(crsunit)
         crsmeter = quantity.to(ureg.meter).magnitude
     except:
         crsmeter = None
-
-    # try:
-    #     if crsunit in unit_mapping:
-    #         quantity = 1 * unit_mapping[crsunit]
-    #         crsmeter = quantity.to(ureg.meter).magnitude
-    #     else:
-    #         crsmeter = None
-    # except:
-    #     crsmeter = None
 
     if crsmeter is not None and ifcmeter is not None:
         coeff= ifcmeter/crsmeter
@@ -1315,17 +1296,6 @@ def fileOpener(filename):
         with ifc_file_cache_lock:
             ifc_file_cache[cache_key] = ifc_file
             remember_ifc_cache_order(cache_key)
-        # ifc_schema = ifc_file.schema
-        # ifc_site = ifc_file.by_type("IfcSite")[0]
-        # ifc_unit = ifc_file.by_type("IfcUnitAssignment")[0].Units
-        # ifc_geom = ifc_file.by_type("IfcGeometricRepresentationContext")[0]
-        # ifc_mapconv, ifc_projcrs = georeference_ifc.get_mapconversion_crs(ifc_file=ifc_file)
-        # session['ifc_schema'] = ifc_schema
-        # session['ifc_site'] = pickle.dumps(ifc_site.ObjectPlacement)
-        # # session['ifc_unit'] = ifc_unit
-        # # session['ifc_geom'] = ifc_geom
-        # # session['ifc_mapconv'] = ifc_mapconv
-        # # session['ifc_projcrs'] = ifc_projcrs
         return ifc_file
     except Exception as e:
         print("Error opening IFC file:", str(e))  # Add this line for debugging
