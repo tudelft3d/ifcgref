@@ -1,4 +1,6 @@
 .env
+.DS_Store
+.vs/
 __pycache__/
 *.pyc
 build/
