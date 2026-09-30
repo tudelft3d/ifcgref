@@ -5,47 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IfcGref</title>
     <link rel="icon" type="image/x-icon" href="../static/images/flavicon.png">
+    <link rel="stylesheet" href="{{ url_for('static', filename='workflow.css') }}">
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
             justify-content: flex-start;
-            background-color: #f8f9fa;
-            align-items: center;
-            margin: 0;
             min-height: 100vh;
             padding: 20px 20px 130px;
-            flex-direction: column;
             box-sizing: border-box;
         }
         .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             max-width: 500px;
-            width: 100%;
-            text-align: center;
-            position: relative;
-        }
-        .header {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .logo {
-            max-height: 60px;
-        }
-        h1 {
-            margin-bottom: 20px;
-            font-size: 24px;
-            color: #333;
-        }
-        .error-message {
-            color: red;
-            margin-bottom: 20px;
         }
         .drop-zone {
             border: 2px dashed #ccc;
@@ -63,23 +32,6 @@
         .highlight {
             color: #007bff;
             cursor: pointer;
-        }
-        .loader {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: none;
-        }
-        .loader img {
-            width: 100px;
-            height: 100px;
-            animation: fadeInOut 2s infinite;
-        }
-        @keyframes fadeInOut {
-            0% { opacity: 0; }
-            50% { opacity: 1; }
-            100% { opacity: 0; }
         }
         .box {
             display: inline-block;
