@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import plistlib
 import shutil
 import stat
 import sys
@@ -73,34 +74,17 @@ def main():
     for dirname in INCLUDE_DIRS:
         copy_tree(ROOT / dirname, RESOURCES_APP / dirname)
 
-    write_text(
-        APP_BUNDLE / "Contents" / "Info.plist",
-        f"""<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleExecutable</key>
-    <string>{APP_NAME}</string>
-    <key>CFBundleIdentifier</key>
-    <string>nl.tudelft.ifcgref.desktop</string>
-    <key>CFBundleName</key>
-    <string>IfcGref</string>
-    <key>CFBundleDisplayName</key>
-    <string>IfcGref</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>{VERSION}</string>
-    <key>CFBundleVersion</key>
-    <string>{VERSION}</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>12.0</string>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-</dict>
-</plist>
-""",
-    )
+    (APP_BUNDLE / "Contents" / "Info.plist").write_bytes(plistlib.dumps({
+        "CFBundleExecutable": APP_NAME,
+        "CFBundleIdentifier": "nl.tudelft.ifcgref.desktop",
+        "CFBundleName": "IfcGref",
+        "CFBundleDisplayName": "IfcGref",
+        "CFBundlePackageType": "APPL",
+        "CFBundleShortVersionString": VERSION,
+        "CFBundleVersion": VERSION,
+        "LSMinimumSystemVersion": "12.0",
+        "NSHighResolutionCapable": True,
+    }))
 
     launcher = f"""#!/bin/zsh
 set -e
