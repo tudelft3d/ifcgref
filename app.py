@@ -1024,6 +1024,8 @@ def job_status_api(job_id):
 
 @app.route('/result/<filename>')
 def result_page(filename):
+    if not is_safe_upload_filename(filename):
+        return 'File not found', 404
     return render_georef_result(filename)
 
 @app.route('/upload', methods=['POST'])
@@ -1033,8 +1035,9 @@ def upload_file():
     file = request.files['file']
     if file.filename == '':
         return "No selected file"
-    if file and allowed_file(file.filename):  # Check if the file extension is allowed
-        filename = f"{uuid4().hex}_{secure_filename(file.filename)}"
+    filename = secure_filename(file.filename)
+    if file and allowed_file(file.filename) and is_safe_upload_filename(filename):
+        filename = f"{uuid4().hex}_{filename}"
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         update_model_state(filename, original_filename=file.filename, uploaded_at=utc_now())
         job_id = start_job(
@@ -1045,7 +1048,7 @@ def upload_file():
         )
         return redirect(url_for('job_status_page', job_id=job_id))
     else:
-        return render_template('upload.html', error_message="Invalid file format. Please upload a .ifc file.")
+        return render_template('upload.html', error_message="Invalid filename or format. Please upload a named .ifc file."), 400
 
 @app.route('/devs', methods=['GET', 'POST'])
 def devs_upload():
@@ -1058,8 +1061,8 @@ def devs_upload():
         if file.filename == '':
             return "No selected file"
 
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
+        filename = secure_filename(file.filename)
+        if file and allowed_file(file.filename) and is_safe_upload_filename(filename):
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             update_model_state(filename, original_filename=file.filename, uploaded_at=utc_now())
             ifc_file = fileOpener(filename)
@@ -1080,9 +1083,12 @@ def devs_upload():
             else:
                 message += "For georeferencing the IFC file, please visit the following address in a web browser:\nhttps://ifcgref.bk.tudelft.nl"
                 return f"Filename: {filename}\nGeoreferenced: NO\n{message}"
+        return "Invalid filename or format. Please upload a named .ifc file.", 400
                 
 @app.route('/convert/<filename>', methods=['GET', 'POST'])
 def convert_crs(filename):
+    if not is_safe_upload_filename(filename):
+        return 'File not found', 404
     if request.method == 'POST':
         try:
             epsg_code = int(request.form.get('epsg_code', ''))
@@ -1149,6 +1155,8 @@ def render_survey_with_values(filename, rows, form_values=None, field_errors=Non
 
 @app.route('/survey/<filename>', methods=['GET', 'POST'])
 def survey_points(filename):
+    if not is_safe_upload_filename(filename):
+        return 'File not found', 404
     epsg_code = workflow_value(filename, 'target_epsg')
     messages, error = infoExt(filename, epsg_code)
     ifcunit = workflow_value(filename, 'ifcunit')
@@ -1225,6 +1233,8 @@ def local_trans(filename , messages):
 
 @app.route('/calc/<filename>', methods=['GET', 'POST'])
 def calculate(filename):
+    if not is_safe_upload_filename(filename):
+        return 'File not found', 404
     context = workflow_context(filename, [
         'coeff',
         'rows',
@@ -1287,6 +1297,8 @@ def fileOpener(filename):
 
 @app.route('/show/<filename>', methods=['GET', 'POST'])
 def visualize(filename):
+    if not is_safe_upload_filename(filename):
+        return 'File not found', 404
     fn = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     fn_output = re.sub(r'\.ifc$','_georeferenced.ifc', fn)
     if not os.path.exists(fn_output):
