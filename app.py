@@ -1040,7 +1040,8 @@ def job_status_api(job_id):
 
 @app.route('/result/<filename>')
 def result_page(filename):
-    return render_georef_result(filename)
+    safe_filename = secure_filename(filename)
+    return render_georef_result(safe_filename)
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
