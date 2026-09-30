@@ -675,33 +675,17 @@ def render_georef_result(filename):
         message2 = message
 
     if coeff is None:
-        return render_template(
-            'result.html',
-            filename=filename,
-            table_f=html_table_f,
-            table_g=html_table_g,
-            message=message2,
-            download_available=output_exists,
-        )
-
-    if int(coeff) != 1 and IfcMapConversion.Scale is None:
-        message += "There is a conflict between Scale factor and unit conversion. (Yet to be decided by buildingSmart.)"
-        persist_workflow_values(source_filename, scaleError=True)
-        cache_map_context(source_filename, ifc_file, eff=coeff, scale_error=True)
-        return render_template(
-            'result.html',
-            filename=filename,
-            table_f=html_table_f,
-            table_g=html_table_g,
-            message=message,
-            download_available=output_exists,
-        )
-    if int(coeff) != 1 and int(IfcMapConversion.Scale) == 1:
-        message += "There is a conflict between Scale factor and unit conversion. (Yet to be decided by buildingSmart.)"
-        persist_workflow_values(source_filename, scaleError=True)
-        cache_map_context(source_filename, ifc_file, eff=coeff, scale_error=True)
+        message = message2
     else:
-        cache_map_context(source_filename, ifc_file, eff=coeff)
+        scale_error = int(coeff) != 1 and (
+            IfcMapConversion.Scale is None or int(IfcMapConversion.Scale) == 1
+        )
+        if scale_error:
+            message += "There is a conflict between Scale factor and unit conversion. (Yet to be decided by buildingSmart.)"
+            persist_workflow_values(source_filename, scaleError=True)
+        cache_map_context(
+            source_filename, ifc_file, eff=coeff, scale_error=scale_error,
+        )
     return render_template(
         'result.html',
         filename=filename,
