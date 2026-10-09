@@ -3,6 +3,7 @@
 import importlib
 import os
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -288,6 +289,26 @@ class ViewerOriginTests(unittest.TestCase):
                 self.assertEqual(download.data, original_bytes)
                 download.close()
             self.assertEqual(output.read_bytes(), original_bytes)
+
+    def test_map_provider_keys_control_viewer_options(self):
+        model = make_model('IFC4')
+        georeference_ifc.set_mapconversion_crs(
+            model, 'EPSG:28992', 155000., 463000., 0., 1., 0., .001,
+        )
+        for carto_key, maptiler_key in (
+            ('', ''), ('fake-carto-key', ''), ('', 'fake&+maptiler-key'),
+            ('fake-carto-key', 'fake&+maptiler-key'),
+        ):
+            with self.subTest(carto=bool(carto_key), maptiler=bool(maptiler_key)):
+                with patch.dict(self.workflow.app.config, {
+                    'CARTO_KEY': carto_key, 'MAPTILER_KEY': maptiler_key,
+                }):
+                    context = self.workflow.build_map_context(model, 'model.ifc')
+                self.assertEqual(context['CartoKey'], carto_key)
+                self.assertEqual(bool(context['MapTilerStyles']), bool(maptiler_key))
+                for style in context['MapTilerStyles']:
+                    query = parse_qs(urlparse(style['style']).query)
+                    self.assertEqual(query['key'], [maptiler_key])
 
     def test_legacy_scale_error_uses_the_same_transform_for_anchor_and_mesh(self):
         model = create_body_model((200, 300, 4), (500, 600, 2), prefix='MILLI')

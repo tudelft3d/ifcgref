@@ -131,7 +131,8 @@ but **all desktop build scripts include it in packages when present**. See
 | `IFCGREF_UPLOAD_RETENTION_DAYS` | `30` | Age limit in days for IFC inputs/outputs and model state. Use `0` to disable this cleanup. |
 | `IFCGREF_JOB_RETENTION_DAYS` | `7` | Age limit in days for background job status files. Use `0` to disable this cleanup. |
 | `IFCGREF_IFC_CACHE_MAX` | `4` | Maximum number of parsed IFC files held in the in-memory cache. |
-| `IFCGREF_MAPTILER_KEY` | empty | API key for MapTiler layers; other map layers can be used without it. |
+| `IFCGREF_CARTO_KEY` | empty | CARTO Basemaps API key. Enables CARTO Voyager and Light; Voyager is the default when configured. |
+| `IFCGREF_MAPTILER_KEY` | empty | API key for MapTiler layers. These layers appear only when configured. |
 | `IFCGREF_HOST` | `127.0.0.1` | Host for `python app.py`. The desktop launcher always binds to `127.0.0.1`. |
 | `IFCGREF_PORT` | `5000`; available port in the desktop launcher | Local server port. |
 | `IFCGREF_DESKTOP` | off | Enables desktop storage and upload defaults. The desktop launcher sets this automatically. |
@@ -143,6 +144,15 @@ Cleanup runs at application startup and checks file modification times.
 The desktop launcher selects its port and data directory before loading `.env`;
 supply those overrides through the process environment. The portable macOS
 launcher sets its own data directory as described in the desktop guide.
+
+Without a CARTO key, the viewer starts with OpenStreetMap. PDOK layers are also
+available without a key and cover the Netherlands. To enable CARTO, request a
+[Basemaps API key](https://www.carto.com/basemaps/apikey/), set
+`IFCGREF_CARTO_KEY` in the server environment or `.env`, and restart the app runner.
+For the hosted application, restrict the key to `ifcgref.bk.tudelft.nl` in the
+CARTO dashboard. Tile URLs expose this browser key to visitors. Use a separate
+key for local desktop installations. Keep the map attribution visible and follow
+the [OpenStreetMap tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
 
 ## HTTP inspection endpoint
 
@@ -198,7 +208,7 @@ python -m unittest discover -s tests -v
 Run the viewer transform tests with Node.js 18 or newer (no npm install needed):
 
 ```bash
-node --test tests/test_viewer_transform.mjs
+node --test tests/test_viewer_transform.mjs tests/test_map_styles.mjs
 ```
 
 ## Credits
