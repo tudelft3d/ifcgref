@@ -358,26 +358,14 @@
 </script>
 
 <script type="module">
-    // var Lat = 52.08285254645348;
-    // var Long = 4.31609264460997;
-    // var fn = '413_AR_AP_510_2025_PRAHA_GOA_V4_8.ifc';
-    // var Rot = 0.014690158531237554;
-    // var sc =1;
-    // var OGx = 0;
-    // var OGy = 0;
-    // var scCRS = 0.9985;
-    // var lz = -1;
-    var OGx = '{{ Gx }}';
-    var OGy = '{{ Gy }}';
     var Lat = '{{ Latitude }}';
     var Long = '{{ Longitude }}';
     var fn = '{{filename}}';
-    var Rot = '{{Rotate}}';
     var sc = '{{Scale}}';
-    var scCRS = '{{ScaleCRS}}';
     var lz = Number('{{LowestLevel}}') || 0;
     var mapTilerStyles = {{ MapTilerStyles|default([], true)|tojson }};
-    var org = [0,0,0];
+    const viewerOrigin = {{ origin|tojson }};
+    const mapAxes = {{ MapAxes|tojson }};
 
 
     import * as THREE from 'three';
@@ -385,7 +373,7 @@
     import { IFCLoader } from 'web-ifc-three';
     import { IFCSPACE } from 'web-ifc';
 
-    let scene, renderer, map, customLayer, ifcLoader, modelTransformState, BIMscaleState, currentIfcModel, bimLngLatBounds;
+    let scene, renderer, map, customLayer, ifcLoader, modelTransformState, currentIfcModel, bimLngLatBounds;
     let mapStyleApplyTimer = null;
     let applyingMapStyle = false;
     let verticalOffset = 0;
@@ -549,26 +537,13 @@
 
         const modelOrigin = [Long, Lat];
         const modelAltitude = 0;
-        const modelRotate = [Math.PI / 2, Rot, 0];
         const modelAsMercatorCoordinate = maplibregl.MercatorCoordinate.fromLngLat(modelOrigin, modelAltitude);
-        const customTranslateX = org.at(0) * modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
-        const customTranslateY = org.at(1) * modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
-        const customTranslateZ = org.at(2) * modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
-
-
-        // const customTranslateX = 0.000002;
-        const modelTransform = {
-            translateX: modelAsMercatorCoordinate.x + customTranslateX,
-            translateY: modelAsMercatorCoordinate.y + customTranslateY,
-            translateZ: modelAsMercatorCoordinate.z + customTranslateZ,
-            rotateX: modelRotate[0],
-            rotateY: modelRotate[1],
-            rotateZ: modelRotate[2],
-            scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits()
+        modelTransformState = {
+            translateX: modelAsMercatorCoordinate.x,
+            translateY: modelAsMercatorCoordinate.y,
+            translateZ: modelAsMercatorCoordinate.z,
+            verticalScale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits() * sc
         };
-        var BIMscale = modelTransform.scale*scCRS*sc*0.9985;
-        modelTransformState = modelTransform;
-        BIMscaleState = BIMscale;
         // Scene
         scene = new THREE.Scene();
         // scene.background = new THREE.Color(0x8cc7de);
@@ -594,7 +569,7 @@
         window.ifcgrefMap = map;
         renderer.autoClear = false;
 
-        customLayer = makeCustomLayer(modelTransformState, BIMscaleState);
+        customLayer = makeCustomLayer();
 
         map.on('style.load', scheduleSelectedMapStyleApply);
         map.on('styledata', scheduleSelectedMapStyleApply);
@@ -643,15 +618,14 @@
     }
 
     function getBimMercatorMatrix() {
-        const rotationX = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1, 0, 0), modelTransformState.rotateX);
-        const rotationY = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0, 1, 0), modelTransformState.rotateY);
-        const rotationZ = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0, 0, 1), modelTransformState.rotateZ);
-        return new THREE.Matrix4()
-            .makeTranslation(modelTransformState.translateX, modelTransformState.translateY, modelTransformState.translateZ)
-            .scale(new THREE.Vector3(BIMscaleState, -BIMscaleState, BIMscaleState))
-            .multiply(rotationX)
-            .multiply(rotationY)
-            .multiply(rotationZ);
+        // Loader coordinates are IFC (X, Z, -Y), already relative to viewerOrigin.
+        return new THREE.Matrix4().set(
+            mapAxes[0][0], 0, -mapAxes[1][0], modelTransformState.translateX,
+            mapAxes[0][1], 0, -mapAxes[1][1], modelTransformState.translateY,
+            0, modelTransformState.verticalScale, 0,
+            modelTransformState.translateZ + verticalOffset * modelTransformState.verticalScale,
+            0, 0, 0, 1
+        );
     }
 
     function calculateBimLngLatBounds(object) {
@@ -701,7 +675,12 @@
         ifcLoader = new IFCLoader();
         await ifcLoader.ifcManager.setWasmPath('https://cdn.jsdelivr.net/npm/web-ifc@0.0.77/', true);
         await ifcLoader.ifcManager.parser.setupOptionalCategories({ [IFCSPACE]: includeSpaces });
-        await ifcLoader.ifcManager.applyWebIfcConfig({ USE_FAST_BOOLS: true });
+        await ifcLoader.ifcManager.applyWebIfcConfig({ USE_FAST_BOOLS: true, COORDINATE_TO_ORIGIN: false });
+        // web-ifc uses metres and maps IFC XYZ to Three.js X, Z, -Y.
+        // Rebase before the loader bakes world coordinates into Float32 buffers.
+        ifcLoader.ifcManager.setupCoordinationMatrix(new THREE.Matrix4().makeTranslation(
+            -viewerOrigin[0], -viewerOrigin[2], viewerOrigin[1]
+        ));
 
         const filePath = '/uploads/' + encodeURIComponent(fn);
         ifcLoader.load(filePath, function (model) {
@@ -710,7 +689,6 @@
                 return;
             }
             currentIfcModel = model;
-            model.mesh.position.set(-OGx, 0, OGy);
             scene.add(model.mesh);
             const boundingBox = new THREE.Box3().setFromObject(model.mesh);
             lz = boundingBox.min.y;
@@ -755,7 +733,7 @@
         });
     }
 
-    function makeCustomLayer(modelTransform, BIMscale) {
+    function makeCustomLayer() {
         return {
             id: '3d-model',
             type: 'custom',
@@ -767,22 +745,10 @@
                 this.camera = new THREE.PerspectiveCamera();
             },
             render: function(gl, matrix) {
-                const rotationX = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1, 0, 0), modelTransform.rotateX);
-                const rotationY = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0, 1, 0), modelTransform.rotateY);
-                const rotationZ = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0, 0, 1), modelTransform.rotateZ);
-
                 const m = new THREE.Matrix4().fromArray(matrix);
-                const translatedZ = modelTransform.translateZ + (verticalOffset * BIMscale);
-                const l = new THREE.Matrix4()
-                    .makeTranslation(modelTransform.translateX, modelTransform.translateY, translatedZ)
-                    .scale(new THREE.Vector3(BIMscale,-BIMscale,BIMscale))
-                    .multiply(rotationX)
-                    .multiply(rotationY)
-                    .multiply(rotationZ);
-
-                this.camera.projectionMatrix = m.multiply(l);
+                this.camera.projectionMatrix = m.multiply(getBimMercatorMatrix());
                 if (verticalMode === '0') {
-                    const clippingPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+                    const clippingPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), viewerOrigin[2]);
                     this.renderer.clippingPlanes = [clippingPlane];
                     this.renderer.localClippingEnabled = true;
                 } else {
@@ -821,7 +787,7 @@
             scheduleSelectedMapStyleApply();
             return;
         }
-        if (!map || !renderer || !scene || !modelTransformState || !BIMscaleState) {
+        if (!map || !renderer || !scene || !modelTransformState) {
             scheduleSelectedMapStyleApply();
             return;
         }
@@ -843,7 +809,7 @@
     }
 
     function ensureBimLayerOnTop() {
-        if (!map || !renderer || !scene || !modelTransformState || !BIMscaleState) {
+        if (!map || !renderer || !scene || !modelTransformState) {
             return;
         }
         if (map.getLayer('3d-model')) {
@@ -851,7 +817,7 @@
         }
         // Re-adding the custom layer after the selected base map and overlays makes
         // the BIM model the final layer rendered by MapLibre.
-        customLayer = makeCustomLayer(modelTransformState, BIMscaleState);
+        customLayer = makeCustomLayer();
         map.addLayer(customLayer);
     }
 
@@ -873,7 +839,7 @@
     function applyVerticalMode() {
         const selectedMode = document.querySelector('input[name="toggle"]:checked')?.value || '0';
         verticalMode = selectedMode;
-        verticalOffset = selectedMode === '1' ? -lz : 0;
+        verticalOffset = selectedMode === '1' ? -lz : viewerOrigin[2];
         if (map) {
             map.triggerRepaint();
         }
