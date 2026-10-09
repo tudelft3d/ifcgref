@@ -20,6 +20,9 @@ from scipy.optimize import leastsq
 import pandas as pd
 import json
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
+import ifcopenshell.util.shape
+import ifcopenshell.util.unit
 import time
 import threading
 import traceback
@@ -683,9 +686,12 @@ def render_georef_result(filename):
         if scale_error:
             message += "There is a conflict between Scale factor and unit conversion. (Yet to be decided by buildingSmart.)"
             persist_workflow_values(source_filename, scaleError=True)
-        cache_map_context(
-            source_filename, ifc_file, eff=coeff, scale_error=scale_error,
-        )
+        try:
+            cache_map_context(
+                source_filename, ifc_file, eff=coeff, scale_error=scale_error,
+            )
+        except ValueError:
+            message += "\nCould not prepare the map viewer. Check the target CRS and model coordinates."
     return render_template(
         'result.html',
         filename=filename,
@@ -854,16 +860,51 @@ def write_georeferenced_ifc(progress, filename, form_data, context):
     }
 
 
+def get_viewer_origin(ifc_file):
+    """Choose an absolute body vertex in metres, without changing the IFC."""
+    products = [
+        product for product in ifc_file.by_type('IfcProduct')
+        if product.Representation and not any(product.is_a(kind) for kind in (
+            'IfcAnnotation', 'IfcFeatureElement', 'IfcSpace',
+        ))
+    ]
+    settings = ifcopenshell.geom.settings()
+    settings.set('convert-back-units', False)
+    for context in ifcopenshell.util.representation.get_prioritised_contexts(ifc_file):
+        if context.CoordinateSpaceDimension != 3 or context.ContextType == 'Plan':
+            continue
+        settings.set('context-ids', [context.id()])
+        for product in products:
+            if not any(rep.ContextOfItems == context for rep in product.Representation.Representations):
+                continue
+            try:
+                shape = ifcopenshell.geom.create_shape(settings, product)
+                if not shape.geometry.faces:
+                    continue
+                vertices = ifcopenshell.util.shape.get_shape_vertices(shape, shape.geometry)
+                for vertex in vertices:
+                    if np.isfinite(vertex).all():
+                        return tuple(float(value) for value in vertex)
+            except (RuntimeError, ValueError):
+                # An unsupported representation must not hide later valid bodies.
+                continue
+    # No usable body: retain the coordinate origin, never an arbitrary placement.
+    return (0.0, 0.0, 0.0)
+
+
 def build_map_context(ifc_file, model_filename, eff=None, scale_error=False):
     IfcMapConversion, IfcProjectedCRS = get_mapconversion_crs_or_error(ifc_file)
     target_epsg = "EPSG:" + str(get_epsg_from_projected_crs(IfcProjectedCRS))
     org = get_world_origin(ifc_file)
+    viewer_origin = get_viewer_origin(ifc_file)
+    # Geometry engines return metres; map conversion consumes project units.
+    project_unit = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+    anchor_x, anchor_y = (value / project_unit for value in viewer_origin[:2])
     E = IfcMapConversion.Eastings
     N = IfcMapConversion.Northings
     S = IfcMapConversion.Scale
     if S is None:
         S = 1
-    ortz = IfcMapConversion.OrthogonalHeight
     cos = IfcMapConversion.XAxisAbscissa
     if cos is None:
         cos = 1
@@ -873,10 +914,9 @@ def build_map_context(ifc_file, model_filename, eff=None, scale_error=False):
     Rotation_solution = math.atan2(sin, cos)
     A = math.cos(Rotation_solution)
     B = math.sin(Rotation_solution)
-    transformer2 = Transformer.from_crs(target_epsg, "EPSG:4326")
-    Gx, Gy = 0, 0
+    transformer2 = Transformer.from_crs(target_epsg, "EPSG:4326", always_xy=True)
     if eff is None:
-        eff = length_unit_ratio(ifc_file, target_epsg)
+        eff = project_unit / pyproj.CRS(target_epsg).axis_info[0].unit_conversion_factor
     eff = float(eff)
 
     if scale_error:
@@ -884,7 +924,6 @@ def build_map_context(ifc_file, model_filename, eff=None, scale_error=False):
         S = eff
         E = E * S
         N = N * S
-        ortz = ortz * S
         xx = S * org[0] * A - S * org[1] * B + E
         yy = S * org[0] * B + S * org[1] * A + N
         S = saver
@@ -894,31 +933,30 @@ def build_map_context(ifc_file, model_filename, eff=None, scale_error=False):
         yy = S * org[0] * B + S * org[1] * A + N
         Snew = S / eff
 
-    if xx == 0 and yy == 0:
-        products = ifc_file.by_type('IfcProduct')
-        for product in products:
-            if product.Representation and product.ObjectPlacement:
-                placement = product.ObjectPlacement
-                lpMAat = ifcopenshell.util.placement.get_local_placement(placement)
-                Gx, Gy = lpMAat[0][3] * eff, lpMAat[1][3] * eff
-                xx = xx + Gx
-                yy = yy + Gy
-                break
+    # Move the map anchor by the same transform used to draw the rebased mesh.
+    # Preserve the existing interpretation of legacy scale-error files.
+    anchor_scale = S * eff if scale_error else S
+    xx += anchor_scale * (anchor_x * A - anchor_y * B)
+    yy += anchor_scale * (anchor_x * B + anchor_y * A)
 
-    x2, y2 = transformer2.transform(xx, yy)
-    projstring = pyproj.CRS(target_epsg).to_proj4()
-    crs = pyproj.CRS(projstring)
-    Scale_value = crs.to_dict().get('k', None)
-    if Scale_value is None:
-        Scale_value = 1
-
+    longitude, latitude = transformer2.transform(xx, yy)
     transformer3 = Transformer.from_crs(target_epsg, "EPSG:3857", always_xy=True)
-    x_3857, y_3857 = transformer3.transform(xx, yy)
-    xn_3857, yn_3857 = transformer3.transform(xx + 1000, yy)
-    dx = -x_3857 + xn_3857
-    dy = -y_3857 + yn_3857
-    angle_radians = math.atan2(dy, dx)
-    Rotation_solution = Rotation_solution + angle_radians
+    # Local IFC X/Y basis in MapLibre's normalized Mercator coordinates.
+    # Sample one metre either side of the anchor, including rotation and Scale.
+    # This replaces the old hardcoded projection correction on mesh geometry.
+    map_units_per_metre = anchor_scale / project_unit
+    circumference = 2 * math.pi * pyproj.CRS('EPSG:3857').ellipsoid.semi_major_metre
+    map_axes = []
+    for x, y in ((A, B), (-B, A)):
+        dx, dy = x * map_units_per_metre, y * map_units_per_metre
+        before = transformer3.transform(xx - dx, yy - dy)
+        after = transformer3.transform(xx + dx, yy + dy)
+        map_axes.append([
+            (after[0] - before[0]) / (2 * circumference),
+            -(after[1] - before[1]) / (2 * circumference),
+        ])
+    if not np.isfinite([longitude, latitude, *np.array(map_axes).flat]).all():
+        raise ValueError('The model geometry is outside the target CRS projection domain.')
 
     maptiler_query = urlencode({'key': app.config['MAPTILER_KEY']})
     maptiler_styles = [
@@ -941,14 +979,11 @@ def build_map_context(ifc_file, model_filename, eff=None, scale_error=False):
 
     return {
         'filename': model_filename,
-        'Latitude': x2,
-        'Longitude': y2,
-        'Rotate': Rotation_solution,
-        'origin': org,
+        'Latitude': latitude,
+        'Longitude': longitude,
+        'origin': viewer_origin,
         'Scale': Snew,
-        'ScaleCRS': Scale_value,
-        'Gx': Gx,
-        'Gy': Gy,
+        'MapAxes': map_axes,
         'LowestLevel': 0,
         'MapTilerStyles': maptiler_styles,
     }

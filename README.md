@@ -195,6 +195,12 @@ After installing the dependencies, run the regression suite from the repository 
 python -m unittest discover -s tests -v
 ```
 
+Run the viewer transform tests with Node.js 18 or newer (no npm install needed):
+
+```bash
+node --test tests/test_viewer_transform.mjs
+```
+
 ## Credits
 
 - Flask provides the web application framework.
