@@ -82,6 +82,7 @@ if DESKTOP_MODE and 'IFCGREF_MAX_UPLOAD_MB' not in os.environ:
 else:
     app.config['MAX_CONTENT_LENGTH'] = env_int('IFCGREF_MAX_UPLOAD_MB', 250, minimum=1) * 1024 * 1024
 app.config['MAPTILER_KEY'] = os.environ.get('IFCGREF_MAPTILER_KEY', '').strip()
+app.config['CARTO_KEY'] = os.environ.get('IFCGREF_CARTO_KEY', '').strip()
 ALLOWED_EXTENSIONS = {'ifc'}  # Define allowed file extensions as a set
 UPLOAD_RETENTION_DAYS = env_int('IFCGREF_UPLOAD_RETENTION_DAYS', 30, minimum=0)
 JOB_RETENTION_DAYS = env_int('IFCGREF_JOB_RETENTION_DAYS', 7, minimum=0)
@@ -975,7 +976,7 @@ def build_map_context(ifc_file, model_filename, eff=None, scale_error=False):
             'label': 'MapTiler Satellite',
             'style': f'https://api.maptiler.com/maps/satellite/style.json?{maptiler_query}',
         },
-    ]
+    ] if app.config['MAPTILER_KEY'] else []
 
     return {
         'filename': model_filename,
@@ -986,6 +987,7 @@ def build_map_context(ifc_file, model_filename, eff=None, scale_error=False):
         'MapAxes': map_axes,
         'LowestLevel': 0,
         'MapTilerStyles': maptiler_styles,
+        'CartoKey': app.config['CARTO_KEY'],
     }
 
 

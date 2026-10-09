@@ -364,6 +364,7 @@
     var sc = '{{Scale}}';
     var lz = Number('{{LowestLevel}}') || 0;
     var mapTilerStyles = {{ MapTilerStyles|default([], true)|tojson }};
+    const cartoKey = {{ CartoKey|default('', true)|tojson }};
     const viewerOrigin = {{ origin|tojson }};
     const mapAxes = {{ MapAxes|tojson }};
 
@@ -381,19 +382,17 @@
     let currentStyleIndex = 0;
     let ifcLoadVersion = 0;
 
+    const cartoQuery = new URLSearchParams({ key: cartoKey }).toString();
     const cartoVoyagerStyle = {
         version: 8,
         sources: {
             'carto-voyager': {
                 type: 'raster',
                 tiles: [
-                    'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                    'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                    'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                    'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+                    `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?${cartoQuery}`
                 ],
                 tileSize: 256,
-                attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             }
         },
         layers: [
@@ -411,13 +410,10 @@
             'carto-light': {
                 type: 'raster',
                 tiles: [
-                    'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                    'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                    'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                    'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+                    `https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png?${cartoQuery}`
                 ],
                 tileSize: 256,
-                attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             }
         },
         layers: [
@@ -431,14 +427,21 @@
 
     const mapStyles = [
         {
-            id: 'carto-voyager',
-            label: 'CARTO Voyager',
-            style: cartoVoyagerStyle
-        },
-        {
-            id: 'carto-light',
-            label: 'CARTO Light',
-            style: cartoLightStyle
+            id: 'openstreetmap',
+            label: 'OpenStreetMap',
+            style: {
+                version: 8,
+                sources: {
+                    openstreetmap: {
+                        type: 'raster',
+                        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                        tileSize: 256,
+                        maxzoom: 19,
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    }
+                },
+                layers: [{ id: 'openstreetmap', type: 'raster', source: 'openstreetmap' }]
+            }
         },
         {
             id: 'pdok-brt',
@@ -467,8 +470,14 @@
             style: 'https://api.pdok.nl/kadaster/brt-achtergrondkaart/ogc/v1/styles/darkmode__webmercatorquad?f=mapbox'
         }
     ];
+    if (cartoKey) {
+        mapStyles.unshift(
+            { id: 'carto-voyager', label: 'CARTO Voyager', style: cartoVoyagerStyle },
+            { id: 'carto-light', label: 'CARTO Light', style: cartoLightStyle }
+        );
+    }
     if (mapTilerStyles.length) {
-        mapStyles.splice(2, 0, ...mapTilerStyles);
+        mapStyles.splice(cartoKey ? 2 : 1, 0, ...mapTilerStyles);
     }
     const viewerControls = document.getElementById('viewerControls');
     const viewerSettingsToggle = document.getElementById('viewerSettingsToggle');
