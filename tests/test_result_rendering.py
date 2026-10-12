@@ -12,8 +12,11 @@ from test_ifc2x3_georeferencing import SCALE, TRANSFORM, make_model, properties
 
 
 WARNING = (
-    "There is a conflict between Scale factor and unit conversion. "
-    "(Yet to be decided by buildingSmart.)"
+    "\n\nPossible mismatch between IFC length units, map units, and MapConversion.Scale.\n"
+    "For the map preview, IfcGref treats Eastings and Northings as values in the IFC length unit "
+    "and converts them to map units. It also converts model coordinates and applies the recorded "
+    "Scale (1.0 if omitted). This is a preview assumption; the IFC file and stored georeferencing "
+    "values are unchanged. Verify the units and Scale before relying on the preview."
 )
 
 
